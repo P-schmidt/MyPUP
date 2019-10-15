@@ -26,17 +26,7 @@ class Graph():
         #     self.add_node(self.goal)
         # else:
         for address in self.data.keys():
-            self.add_node(address, self.data[address]['loadtime'])
-
-    def add_node(self, address, loadtime):
-        """
-        Adds a node to self.nodes with (source) address and
-        loadtime
-        """
-        tmp = Node(address, loadtime)
-        self.node_address[address] = tmp
-
-        
+            Node(address, self.data[address]['loadtime'])   
 
 class Node():
     """
@@ -50,14 +40,6 @@ class Node():
         self.loadtime = loadtime
         self.attr = attr
         self.edges = []
-
-    @property
-    def loadtime(self):
-        return self.loadtime
-
-    @property
-    def attr(self):
-        return self.attr
 
     def add_edge(self, edge):
         self.edges.append(edge)

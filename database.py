@@ -49,4 +49,6 @@ def init_database(addresses):
     return database
 
 
+database = {}
+init_database(addresses)
 
