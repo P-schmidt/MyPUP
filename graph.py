@@ -7,7 +7,7 @@ class Graph():
         self.graph = nx.DiGraph()
         self.data = data
         #TODO adres invullen
-        self.mypup = 'Amstelvlietstraat 330 Amsterdam'
+        self.mypup = 'H.J.E. Wenckebachweg 6 V15, 1096 AN Amsterdam NL'
         self.create_nodes()
         self.create_edges()
 
@@ -27,6 +27,6 @@ class Graph():
     def create_edges(self):
         for node1, node2 in itertools.combinations(self.graph, 2):
             dist = self.data[node1][node2]
-            self.graph.add_edge(node1, node2, distance = dist)
+            self.graph.add_edge(node1, node2, duration = dist)
             dist = self.data[node2][node1]
-            self.graph.add_edge(node2, node1, distance = dist)
+            self.graph.add_edge(node2, node1, duration = dist)
