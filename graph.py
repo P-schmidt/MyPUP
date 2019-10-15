@@ -3,10 +3,12 @@ class Graph():
 
     def __init__(self, data):
         # initializes the nodes and edges
+        self.data = data
         self.start = "Mypup"
         self.goal = "Mypup"
         self.nodes = {}
-
+        
+        print('tester')
         # Dictionary where key is address and value is node
         # object
         self.node_address = {}
@@ -16,24 +18,25 @@ class Graph():
         print("node done")
 
         # Create all the edges
-        self.create_edges()
+        # self.create_edges()
     
     def make_node(self):
         # loop through list of nodes and add them
-        if self.goal != None:
-            self.add_node(self.goal)
-        else:
-            for address in data.keys():
-                self.add_node(address)
+        # if self.goal != None:
+        #     self.add_node(self.goal)
+        # else:
+        for address in self.data.keys():
+            self.add_node(address, self.data[address]['loadtime'])
 
-    def add_node(self, address):
+    def add_node(self, address, loadtime):
         """
         Adds a node to self.nodes with (source) address and
         loadtime
         """
-        tmp = Node(address)
-        self.node_address[address] = 
+        tmp = Node(address, loadtime)
+        self.node_address[address] = tmp
 
+        
 
 class Node():
     """
@@ -42,7 +45,7 @@ class Node():
     of the address.
     """
     
-    def __init__(self, address, loadtime, attr):
+    def __init__(self, address, loadtime, attr = None):
         self.address = address
         self.loadtime = loadtime
         self.attr = attr
