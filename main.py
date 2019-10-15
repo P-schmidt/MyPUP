@@ -10,16 +10,8 @@ import random
 
 
 def main():
-    # get a list of addresses and time parameter
-    addresses = get_addresses('Mypup_ams_cleaned.csv')
-    
-    
-    #database = db.init_database(addresses)
-
-
-    # this saves the generated database to a pickle object
-    #with open('duration_db.pkl', 'wb') as f:
-    #    pickle.dump(database, f)
+    # use this function when you want to save a new database to the pickle object
+    #create_database(addresses)
 
     # this accesses the saved pickle object
     with open('duration_db.pkl', 'rb') as f:
@@ -36,9 +28,16 @@ def main():
     # for n in nx.neighbors(G.get_graph(), 'Utrecht'):
         # print(n)
 
-    
     # print(G.get_graph().all_neighbors['Utrecht'])
-    
+
+def create_database(adresses):
+    # get a list of addresses and time parameter
+    addresses = get_addresses('Mypup_ams_cleaned.csv')
+    database = db.init_database(addresses)
+
+    # this saves the generated database to a pickle object
+    with open('duration_db.pkl', 'wb') as f:
+        pickle.dump(database, f)
  
 def get_addresses(filename):
     """ returns a list of addresses and corresponding time params from address database"""

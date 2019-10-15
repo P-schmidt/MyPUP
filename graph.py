@@ -33,8 +33,8 @@ class Graph():
             dist = self.data[node2][node1]
             self.graph.add_edge(node2, node1, duration = dist)
 
-    def create_home(self):
-        
+    def create_home_node(self):
+        pass
 
-    def create_goal(self):
-
+    def create_goal_node(self):
+        pass
