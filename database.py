@@ -8,7 +8,8 @@ import json
 # returns the distance and duration between source and destination using Google Maps Distance Matrix API
 
 
-def get_distance(start_address, end_address):  
+# Gets the duration or distance between start and end, optional driving mode or cycling
+def get_distance(start_address, end_address, duration, driving):  
     # enter your api key here 
     api_key ='AIzaSyBH_UAuRrdPpzN3BoqlM0OriY7mZkbT_j8'
 
@@ -20,35 +21,39 @@ def get_distance(start_address, end_address):
     
     # Take destination as input 
     dest = end_address 
-    
+
+    # bydefault driving mode considered
+    if driving == True:
+        mode = 'driving'
+    else:
+        mode = 'bicycling'
     # url variable store url  
     url ='https://maps.googleapis.com/maps/api/distancematrix/json?'
 
     # Get method of requests module 
     # return response object 
-    r = requests.get(url+'units='+units+'&origins='+source+'&destinations='+dest+'&key='+api_key)
+    r = requests.get(url+'units='+units+'&mode='+mode+'&origins='+source+'&destinations='+dest+'&key='+api_key)
                         
     # json method of response object 
     # return json format result 
     x = r.json() 
-    # bydefault driving mode considered 
-    
+
     # return the distance between source and destination
-    return(x["rows"][0]["elements"][0]["distance"]["value"])
+    if duration == True:
+        return(x["rows"][0]["elements"][0]["duration"]["value"])
+    else:
+        return(x["rows"][0]["elements"][0]["distance"]["value"])
 
 # make a nested dict with the distances in meters between two points, then add loadtime to source
-def init_database(addresses):
+def init_database(addresses, duration=True, driving=True):
     database = {}
     for source in addresses:
         database[source[0]] = {}
         for destination in addresses:
             if source == destination:
                 continue
-            database[source[0]][destination[0]] = get_distance(source[0], destination[0])
+            database[source[0]][destination[0]] = get_distance(source[0], destination[0], duration, driving)
         database[source[0]]['loadtime'] = source[1]
     return database
 
-
-database = {}
-init_database(addresses)
 
