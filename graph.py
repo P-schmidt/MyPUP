@@ -7,7 +7,7 @@ class Graph():
         self.graph = nx.DiGraph()
         self.data = data
         #TODO adres invullen
-        self.mypup = 'H.J.E. Wenckebachweg 6 V15, 1096 AN Amsterdam NL'
+        self.mypup = 'Mypup'
         self.create_nodes()
         self.create_edges()
 
