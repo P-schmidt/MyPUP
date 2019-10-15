@@ -10,6 +10,8 @@ class Graph():
         self.mypup = 'Mypup'
         self.create_nodes()
         self.create_edges()
+        self.create_home()
+        self.create_goal()
 
     def get_graph(self):
         """Returns the graph structure."""
@@ -30,3 +32,9 @@ class Graph():
             self.graph.add_edge(node1, node2, duration = dist)
             dist = self.data[node2][node1]
             self.graph.add_edge(node2, node1, duration = dist)
+
+    def create_home(self):
+        
+
+    def create_goal(self):
+
