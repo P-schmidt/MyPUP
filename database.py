@@ -3,8 +3,6 @@
 import requests 
 import json
 
-
-
 # returns the distance and duration between source and destination using Google Maps Distance Matrix API
 # Gets the duration or distance between start and end, optional driving mode or cycling
 def get_distance(start_address, end_address, duration, driving):  
@@ -44,18 +42,16 @@ def get_distance(start_address, end_address, duration, driving):
 
 # make a nested dict with the distances in meters or duration in seconds  between two points, then add loadtime to source
 def init_database(addresses, duration=True, driving=True):
-    database = {}
+    database = []
     i = 0
     for source in addresses:
-        database[source[0]] = {}
+        source_distances = []
         for destination in addresses:
-            if source[0] == destination[0]:
-                continue
-            database[source[0]][destination[0]] = get_distance(source[1], destination[1], duration, driving)
+            source_distances.append(get_distance(source[1], destination[1], duration, driving))
             i += 1
             if i%100 == 0:
                 print(i)
-        database[source[0]]['loadtime'] = source[2]
+        database.append(source_distances)
     return database
 
 
