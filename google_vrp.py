@@ -10,25 +10,25 @@ import pickle
 
 
 def create_database(filename, create=True):
-    # get a list of addresses and time parameter
-    addresses = get_addresses(filename)
-    database = db.init_database(addresses)
-
+    
     if create == True:
+        # get a list of addresses and time parameter
+        addresses = get_addresses(filename)
+        database = db.init_database(addresses)
+
+        data = {}
+        data['distance_matrix'] = database
+        data['num_vehicles'] = 5
+        data['depot'] = 0
         # this saves the generated database to a pickle object
         with open('duration_db.pkl', 'wb') as f:
-            pickle.dump(database, f)
+            pickle.dump(data, f)
     else:
         with open('duration_db.pkl', 'rb') as f:
-            database = pickle.load(f)
-        
-    
-    data = {}
-    data['distance_matrix'] = database
-    data['num_vehicles'] = 5
-    data['depot'] = 0
-    print(data)
-    print(data['distance_matrix'])
+            data = pickle.load(f)
+            
+    return data
+
  
 def get_addresses(filename):
     """ returns a list of addresses and corresponding time params from address database"""
@@ -114,7 +114,6 @@ def create_data_model():
     data['depot'] = 0
     return data
 
-
 def print_solution(data, manager, routing, solution):
     """Prints solution on console."""
     max_route_distance = 0
@@ -133,9 +132,6 @@ def print_solution(data, manager, routing, solution):
         print(plan_output)
         max_route_distance = max(route_distance, max_route_distance)
     print('Maximum of the route distances: {}m'.format(max_route_distance))
-
-
-
 
 def main():
     """Solve the CVRP problem."""
@@ -168,7 +164,7 @@ def main():
     routing.AddDimension(
         transit_callback_index,
         0,  # no slack
-        3000,  # vehicle maximum travel distance
+        18000,  # vehicle maximum travel distance
         True,  # start cumul to zero
         dimension_name)
     distance_dimension = routing.GetDimensionOrDie(dimension_name)
