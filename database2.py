@@ -67,6 +67,7 @@ def initial_database(filename):
         # calculate distances to all other locations 
         for destination in addresses:
             database[source[0]][destination[0]] = get_distance(source[1], destination[1])
+        print(source[0], 'is done')
     with open(filename+'.pkl', 'wb') as f:
         pickle.dump(database, f)
 
@@ -117,13 +118,14 @@ def remove_from_database(locs, filename):
         pickle.dump(database, f)
 
 
-def create_distance_matrix(companies, filename):
+def create_distance_matrix(filename, companies):
     """ Returns distance matrix.
         Only considers locations that should be visited on a particular day.
        params: 
             companies:  list containing company names for the locations to be visited on a particular day.  
             filename:  name of file with company info (without extension)"""
-    
+    print('dit is de filename:', filename)
+
     with open(filename+'.pkl', 'rb') as f:
         database = pickle.load(f)
 
