@@ -3,45 +3,64 @@
 from __future__ import print_function
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
-import database as db
+import database2 as db
 import pandas as pd
 import random
 import pickle
 
 
-def create_database(filename, create=True):
+def create_database(filename, company_list, create=True):
     
-    if create == True:
-        # get a list of addresses and time parameter
-        addresses = get_addresses(filename)
-        database = db.init_database(addresses)
+    # if create == True:
+    #     # get a list of addresses and time parameter
+    #     addresses = get_addresses(filename)
+    #     database = db.init_database(addresses)
 
-        data = {}
-        data['distance_matrix'] = database
-        data['num_vehicles'] = 5
-        data['depot'] = 0
-        # this saves the generated database to a pickle object
-        with open('duration_db.pkl', 'wb') as f:
-            pickle.dump(data, f)
-    else:
-        with open('duration_db.pkl', 'rb') as f:
-            data = pickle.load(f)
+    #     data = {}
+    #     data['distance_matrix'] = database
+    #     data['num_vehicles'] = 5
+    #     data['depot'] = 0
+    #     # this saves the generated database to a pickle object
+    #     with open('duration_db.pkl', 'wb') as f:
+    #         pickle.dump(data, f)
+    # else:
+    #     with open('duration_db.pkl', 'rb') as f:
+    #         data = pickle.load(f)
+
     
-    data['demands'] = random.sample(range(12,120), len(data['distance_matrix']))
+    # get the loadtimes of the daily_company_list
+
+
+    db.daily_database(company_list, filename)
+
+    with open(filename+'.pkl', 'rb') as f:
+        database_pickle = pickle.load(f)
+
+    daily_company_loadtimes = []
+    # get all the load times of the companies and append them in order to list
+    for company in company_list:
+        daily_company_loadtimes.append(database_pickle[company]['Loadtime'])
+    
+    print('loadingtimes:', daily_company_loadtimes)
+
+    # initialize the data as a dict and add keys with their values
+    data = {}
+    data['distance_matrix'] = db.daily_database(company_list, filename)
+    data['num_vehicles'] = 7
+    data['demands'] = daily_company_loadtimes
     print(sum(data['demands']))
-    data['demands'][0] = 0
-    data['vehicle_capacities'] = [1200, 1200, 1200, 1200, 1200]
+    data['vehicle_capacities'] = [120, 120, 120, 120, 120, 80, 80]
+    print(sum(data['vehicle_capacities']))
+    data['depot'] = 0
+    # data['initial_routes'] = [
+    #     [8, 16, 14, 13, 12, 11],
+    #     [3, 4, 9, 10],
+    #     [15, 1],
+    #     [7, 5, 2, 6],
+    # ]
     return data
 
- 
-def get_addresses(filename):
-    """ returns a list of addresses and corresponding time params from address database"""
-    df = pd.read_csv(filename)
-    df['Address'].replace(u'\xa0',u' ', regex=True, inplace=True)
-    df['Company'].replace(u'\xa0',u'', regex=True, inplace=True)
-    return df[['Company', 'Address']].values.tolist()
-
-def print_solution(data, manager, routing, assignment):
+def print_solution(data, manager, routing, assignment, company_list):
     """Prints assignment on console."""
     total_distance = 0
     total_load = 0
@@ -53,25 +72,35 @@ def print_solution(data, manager, routing, assignment):
         while not routing.IsEnd(index):
             node_index = manager.IndexToNode(index)
             route_load += data['demands'][node_index]
-            plan_output += ' {0} Load({1}) -> '.format(node_index, route_load)
+            plan_output += ' {0} Load({1}) -> '.format(company_list[node_index], route_load)
             previous_index = index
             index = assignment.Value(routing.NextVar(index))
             route_distance += routing.GetArcCostForVehicle(
                 previous_index, index, vehicle_id)
-        plan_output += ' {0} Load({1})\n'.format(manager.IndexToNode(index),
+        plan_output += ' {0} Load({1})\n'.format(company_list[manager.IndexToNode(index)],
                                                  route_load)
-        plan_output += 'Distance of the route: {}m\n'.format(route_distance)
-        plan_output += 'Load of the route: {}\n'.format(route_load)
+        plan_output += 'Travelling time of the route: {}minutes\n'.format(round(route_distance/60))
+        plan_output += 'Loading time of the route: {} minutes\n'.format(route_load)
         print(plan_output)
         total_distance += route_distance
         total_load += route_load
-    print('Total distance of all routes: {}m'.format(total_distance))
-    print('Total load of all routes: {}'.format(total_load))
+    print('Total travelling time of all routes: {}minutes'.format(round(total_distance/60)))
+    print('Total loading time of all routes: {}'.format(total_load))
 
 def main():
     """Solve the CVRP problem."""
+    filename = 'Mypup_ams_cleaned'
+
+    # create a list with all the companies as daily_company_list tester
+    df = pd.read_csv(filename+'.csv')
+    df['Company'].replace(u'\xa0',u'', regex=True, inplace=True)
+    company_list = df['Company'].values.tolist()
+
+    # this is the list of companies that we need to visit on this route
+    #company_list = ['Mypup', 'Joan Muyskenweg 4', 'Joan Muyskenweg 6', 'HVA KSH', 'HVA WBH', 'UVA BH / OIH', 'UVA HVA LWB Privé' , 'UVA PCH', 'UVA REC ABC', 'UVA REC M', 'UVA UB Singel 425']
+
     # Instantiate the data problem.
-    data = create_database('Mypup_ams_cleaned.csv', create=False)
+    data = create_database(filename, company_list)
 
     # Create the routing index manager.
     manager = pywrapcp.RoutingIndexManager(len(data['distance_matrix']),
@@ -121,7 +150,7 @@ def main():
 
     # Print solution on console.
     if assignment:
-        print_solution(data, manager, routing, assignment)
+        print_solution(data, manager, routing, assignment, company_list)
 
 
 if __name__ == '__main__':
