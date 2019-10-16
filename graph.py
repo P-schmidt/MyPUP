@@ -1,17 +1,17 @@
 import networkx as nx 
 import itertools
+import matplotlib as plt
 from collections import defaultdict
 
 class Graph():
     def __init__(self, data):
         self.graph = nx.DiGraph()
         self.data = data
-        #TODO adres invullen
-        self.mypup = 'Mypup'
+
         self.create_nodes()
         self.create_edges()
-        self.create_home()
-        self.create_goal()
+        self.create_home_node()
+        self.create_goal_node()
 
     def get_graph(self):
         """Returns the graph structure."""
@@ -21,10 +21,10 @@ class Graph():
         return self.graph.nodes[address]['loadtime']
 
     def create_nodes(self):
-        for address in self.data.keys():
-            self.graph.add_node(address, loadtime = self.data[address]['loadtime'], 
-                                         visited = False, home = False) 
-        self.graph.nodes[self.mypup]['home'] = True
+        for company in self.data.keys():
+            self.graph.add_node(company, loadtime = self.data[company]['loadtime'], 
+                                    visited = False, home = False, goal = False) 
+        
     
     def create_edges(self):
         for node1, node2 in itertools.combinations(self.graph, 2):
@@ -34,7 +34,20 @@ class Graph():
             self.graph.add_edge(node2, node1, duration = dist)
 
     def create_home_node(self):
-        pass
+        self.graph.nodes['Mypup_home']['home'] = True
+        ebunch = []
+        for node in self.graph.neighbors('Mypup_home'):
+            ebunch.append((node, 'Mypup_home'))
+        self.graph.remove_edges_from(ebunch)
+        
 
     def create_goal_node(self):
-        pass
+        self.graph.nodes['Mypup_goal']['goal'] = True
+        ebunch = []
+        for node in self.graph.neighbors('Mypup_goal'):
+            ebunch.append(('Mypup_goal', node))
+        self.graph.remove_edges_from(ebunch)
+        self.graph.add_edge('Mypup_goal', 'Mypup_home', duration = 0)
+
+    def visualize(self):
+        nx.draw(self.graph)

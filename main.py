@@ -10,34 +10,40 @@ import random
 
 
 def main():
-    # use this function when you want to save a new database to the pickle object
-    #create_database(addresses)
+    # get a list of addresses and time parameter
+    # addresses = get_addresses('Mypup_ams_cleaned.csv')
+    
+    
+    #database = db.init_database(addresses)
+    # G = nx.Graph()
+    # G.add_nodes_from([1,2,3,4,5,56, 'asdf'])
+    # G.add_edges_from([(1,3), (1,4), (1,56)])
+    # G.nodes['asdf']['home'] = True
+
+
+    # this saves the generated database to a pickle object
+    #with open('duration_db.pkl', 'wb') as f:
+    #    pickle.dump(database, f)
 
     # this accesses the saved pickle object
     with open('duration_db.pkl', 'rb') as f:
         database = pickle.load(f)
 
-    #create graph object with data
+    # #create graph object with data
     G = Graph(database)
-    # HOWTO: retrieve node attr
-    print('Mypup node:', G.get_graph().nodes['Mypup'])
+    G.visualize()
+    # # HOWTO: retrieve node attr
+    # print('Mypup node:', G.get_graph().nodes['Mypup'])
     
 
-    print('Dist mypup abn GML', G.get_graph().edges['Mypup', 'ABN AMRO GML'])
+    # print('Dist mypup abn GML', G.get_graph().edges['Mypup', 'ABN AMRO GML'])
     
     # for n in nx.neighbors(G.get_graph(), 'Utrecht'):
         # print(n)
 
+    
     # print(G.get_graph().all_neighbors['Utrecht'])
-
-def create_database(adresses):
-    # get a list of addresses and time parameter
-    addresses = get_addresses('Mypup_ams_cleaned.csv')
-    database = db.init_database(addresses)
-
-    # this saves the generated database to a pickle object
-    with open('duration_db.pkl', 'wb') as f:
-        pickle.dump(database, f)
+    
  
 def get_addresses(filename):
     """ returns a list of addresses and corresponding time params from address database"""
