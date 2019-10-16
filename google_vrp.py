@@ -31,7 +31,7 @@ def create_database(filename, company_list, create=True):
     # get the loadtimes of the daily_company_list
 
 
-    db.daily_database(company_list, filename)
+    db.create_distance_matrix(filename, company_list)
 
     with open(filename+'.pkl', 'rb') as f:
         database_pickle = pickle.load(f)
@@ -40,12 +40,10 @@ def create_database(filename, company_list, create=True):
     # get all the load times of the companies and append them in order to list
     for company in company_list:
         daily_company_loadtimes.append(database_pickle[company]['Loadtime'])
-    
-    print('loadingtimes:', daily_company_loadtimes)
 
     # initialize the data as a dict and add keys with their values
     data = {}
-    data['distance_matrix'] = db.daily_database(company_list, filename)
+    data['distance_matrix'] = db.create_distance_matrix(filename, company_list)
     data['num_vehicles'] = 7
     data['demands'] = daily_company_loadtimes
     print(sum(data['demands']))
@@ -53,11 +51,14 @@ def create_database(filename, company_list, create=True):
     print(sum(data['vehicle_capacities']))
     data['depot'] = 0
     # data['initial_routes'] = [
-    #     [8, 16, 14, 13, 12, 11],
-    #     [3, 4, 9, 10],
-    #     [15, 1],
-    #     [7, 5, 2, 6],
-    # ]
+    #      [8, 16, 14, 13, 12, 11],
+    #      [3, 4, 9, 10],
+    #      [15, 1],
+    #      [7, 5, 2, 6],
+    #      [],
+    #      [],
+
+    #  ]
     return data
 
 def print_solution(data, manager, routing, assignment, company_list):
