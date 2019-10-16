@@ -54,43 +54,71 @@ def get_distance(start_address, end_address, duration=True, driving=True):
 def initial_database(filename):
     """Creates a permanent nested dictionary with travel times or distances for each pair of locations in customer base.
         params:
-            filename:  file containing company names, addresses and load times for all companies in customer base. """
+            filename:  filename indicates what customer base should be retrieved from database. """
+    
     addresses = get_info(filename)
     database = {}
     for source in addresses:
+        # add metadata for location
         database[source[0]] = {}
         database[source[0]]['Loadtime'] = source[2]
         database[source[0]]['Address'] = source[1]
+
+        # calculate distances to all other locations 
         for destination in addresses:
             database[source[0]][destination[0]] = get_distance(source[1], destination[1])
     with open(filename+'.pkl', 'wb') as f:
         pickle.dump(database, f)
 
-def add_to_database(new_locs):
-    """Adds a new location to the database.
+def add_to_database(new_locs, filename):
+    """Adds new locations to the database.
         params:
-            location: a list of tuples consisting of the company name and address.
-            existing_locs: """
+            new_locs: a list of lists consisting of the company name, address and load time.
+            filename:  filename indicates what customer base should be retrieved from database. """
+    
     # open database  
     with open(filename+'.pkl', 'rb') as f:
         database = pickle.load(f)
 
     # add new locations to database
     for new_loc in new_locs:
-        for existing_loc in existing_locs:
-            database[new_loc[0]][existing_loc[0]] = get_distance(new_loc[1], existing_loc[1])
-            database[existing_loc[0]][new_loc[0]] = get_distance(existing_loc[1], new_loc[1])
-    
-    # add to addresses
+        # add metadata for location
+        database[new_loc[0]] = {}
+        database[new_loc[0]]['Loadtime'] = new_loc[2] 
+        database[new_loc[0]]['Address'] = new_loc[1]
+        
+        # calculate distances to each existing location 
+        for existing_loc in database.keys():
+            database[new_loc[0]][existing_loc] = get_distance(new_loc[1], database[existing_loc]['Address'])
+            database[existing_loc][new_loc[0]] = get_distance(database[existing_loc]['Address'], new_loc[1])
+
     # save updated database
     with open(filename+'.pkl', 'wb') as f:
         pickle.dump(database, f)
 
-# make a nested dict with the distances in meters or duration in seconds  between two points, then add loadtime to source
+def remove_from_database(locs, filename):
+    """Removes locations from the database
+        params: 
+            locs: names of companies to remove.
+            filename:  filename indicates what customer base should be retrieved from database. """
+    
+    # open database  
+    with open(filename+'.pkl', 'rb') as f:
+        database = pickle.load(f)
+
+    # remove all instances of location in database
+    for rem_loc in locs:
+        del database[rem_loc]
+        for loc in database.keys():
+            del database[loc][rem_loc]
+    
+    # save updated database
+    with open(filename+'.pkl', 'wb') as f:
+        pickle.dump(database, f)
 
 
-def daily_database(companies, filename):
-    """Creates a list of lists with travel times or distances for each pair of locations. 
+def create_distance_matrix(companies, filename):
+    """ Returns distance matrix.
         Only considers locations that should be visited on a particular day.
        params: 
             companies:  list containing company names for the locations to be visited on a particular day.  
@@ -99,7 +127,7 @@ def daily_database(companies, filename):
     with open(filename+'.pkl', 'rb') as f:
         database = pickle.load(f)
 
-    daily_database = []
+    distance_matrix = []
     for source in companies:
         source_distances = []
         for destination in companies:
@@ -108,31 +136,7 @@ def daily_database(companies, filename):
                 source_distances.append(database[source][destination])
             except:
                 print(f"ERROR:{source} of {destination} niet in database/pickle.")
-                exit(0)
-        print(source_distances)    
-        daily_database.append(source_distances)
-    return database
-
-filename = 'Mypup_bakfiets'
-#initial_database(filename)
-
-with open(filename+'.pkl', 'rb') as f:
-    database = pickle.load(f)
-#print(database)
-daily_company_list = ['Joan Muyskenweg 4', 'Joan Muyskenweg 6', 'HVA KSH', 'HVA WBH', 'UVA BH / OIH', 'UVA HVA LWB Privé' , 'UVA PCH', 'UVA REC ABC', 'UVA REC M', 'UVA UB Singel 425']
-print(daily_database(daily_company_list, filename))
-
-def create_daily_database(filename):
-    # get a list of addresses to visit on particular day
-    addresses = get_info(filename)
-    database = db.init_database(addresses)
-
-    # if create == True:
-    #     # this saves the generated database to a pickle object
-    data = {}  
-    data['distance_matrix'] = database
-    data['num_vehicles'] = 5
-    data['depot'] = 0
-    # print(data)
-    # print(data['distance_matrix'])
+                exit(0)  
+        distance_matrix.append(source_distances)
+    return distance_matrix
 
