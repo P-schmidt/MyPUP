@@ -10,27 +10,7 @@ import pickle
 
 
 def create_database(filename, company_list, create=True):
-    
-    # if create == True:
-    #     # get a list of addresses and time parameter
-    #     addresses = get_addresses(filename)
-    #     database = db.init_database(addresses)
-
-    #     data = {}
-    #     data['distance_matrix'] = database
-    #     data['num_vehicles'] = 5
-    #     data['depot'] = 0
-    #     # this saves the generated database to a pickle object
-    #     with open('duration_db.pkl', 'wb') as f:
-    #         pickle.dump(data, f)
-    # else:
-    #     with open('duration_db.pkl', 'rb') as f:
-    #         data = pickle.load(f)
-
-    
     # get the loadtimes of the daily_company_list
-
-
     db.create_distance_matrix(filename, company_list)
 
     with open(filename+'.pkl', 'rb') as f:
@@ -47,20 +27,24 @@ def create_database(filename, company_list, create=True):
     data['num_vehicles'] = 9
     data['demands'] = daily_company_loadtimes
     print(sum(data['demands']))
-    data['vehicle_capacities'] = [140, 140, 140, 140, 140, 40, 40, 40, 40]
+    data['vehicle_capacities'] = [180, 180, 180, 180, 180, 80, 80, 80, 80]
     print(sum(data['vehicle_capacities']))
     data['depot'] = 0
-    # data['initial_routes'] = [
-    #      [8, 16, 14, 13, 12, 11],
-    #      [3, 4, 9, 10],
-    #      [15, 1],
-    #      [7, 5, 2, 6],
-    #      [],
-    #      [],
+    data['initial_routes'] = [
+         [0, 22, 59, 78, 45, 43, 75, 53, 3, 34, 7, 17, 0],
+         [0, 48, 5, 6, 77, 52, 30, 32, 1, 40, 49, 50, 51, 0],
+         [0, 35, 36, 37, 38, 71, 60, 21, 62, 44, 18, 61, 73, 74, 2, 0],
+         [0, 29, 16, 55, 56, 57, 54, 9, 47, 11, 13, 10, 0],
+         [0, 15, 14, 27, 28, 20, 64, 63, 65, 12, 76, 0],
+         [0, 42, 41, 58, 46, 67, 33, 31, 69, 70, 66, 68, 72, 0],
+         [0, 4, 8, 19, 39, 23, 24, 25, 26, 0],
+         [],
+         [],
 
-    #  ]
+     ]
     return data
 
+# prints the solution that was calculated by algorithm
 def print_solution(data, manager, routing, assignment, company_list):
     """Prints assignment on console."""
     total_distance = 0
@@ -87,6 +71,34 @@ def print_solution(data, manager, routing, assignment, company_list):
         total_load += route_load
     print('Total travelling time of all routes: {}minutes'.format(round(total_distance/60)))
     print('Total loading time of all routes: {}'.format(total_load))
+    return total_distance
+
+# prints the initial solution
+def print_initial_solution(data, company_list):
+    initial_routes = 'initial_routes'
+    total_distance = 0
+    total_loadtime = 0
+    for vehicle_id in range(data['num_vehicles']):
+        if data[initial_routes][vehicle_id] != []:
+            whole_route = f"Route for vehicle {vehicle_id} start at {company_list[data[initial_routes][vehicle_id][0]]} -> "
+            distance = 0
+            loadtime = 0
+            for i in range(0, len(data['initial_routes'][vehicle_id])-1):
+                source = data[initial_routes][vehicle_id][i]
+                destination = data[initial_routes][vehicle_id][i+1]
+                whole_route += f'{company_list[data[initial_routes][vehicle_id][i]]} -> '
+                distance += data['distance_matrix'][source][destination]
+                loadtime += data['demands'][source]
+            whole_route += f'-> {company_list[data[initial_routes][vehicle_id][0]]}'
+            distance += data['distance_matrix'][data[initial_routes][vehicle_id][len(data['initial_routes'][vehicle_id])-1]][len(data['initial_routes'][vehicle_id])]
+            print(whole_route)
+            print(f'total time driven is {round(distance/60)}')
+            print(f'total loadtime is {loadtime}\n')
+            total_distance += distance
+        else:
+            print(f'Vehicle {vehicle_id} is not used in this solution\n')
+    print(f'The total time driven is {round(total_distance/60)}\n')
+    return total_distance
 
 def main():
     """Solve the CVRP problem."""
@@ -124,7 +136,6 @@ def main():
     # Define cost of each arc.
     routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
 
-
     # Add Capacity constraint.
     def demand_callback(from_index):
         """Returns the demand of the node."""
@@ -141,6 +152,8 @@ def main():
         True,  # start cumul to zero
         'Capacity')
 
+    total_initial_distance = print_initial_solution(data, company_list)
+
     # Setting first solution heuristic.
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
@@ -151,8 +164,9 @@ def main():
 
     # Print solution on console.
     if assignment:
-        print_solution(data, manager, routing, assignment, company_list)
+        total_optimized_distance = print_solution(data, manager, routing, assignment, company_list)
 
+    print(f'The overall travelling time that is saved is {round((total_initial_distance-total_optimized_distance)/60)} minutes')
 
 if __name__ == '__main__':
     main()
