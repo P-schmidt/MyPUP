@@ -61,8 +61,8 @@ def initial_database(filename):
     for source in addresses:
         # add metadata for location
         database[source[0]] = {}
-        database[source[0]]['Loadtime'] = source[2]
         database[source[0]]['Address'] = source[1]
+        database[source[0]]['Loadtime'] = source[2]
 
         # calculate distances to all other locations 
         for destination in addresses:
@@ -71,36 +71,35 @@ def initial_database(filename):
     with open(filename+'.pkl', 'wb') as f:
         pickle.dump(database, f)
 
-def add_to_database(new_locs, filename):
+def add_to_database(new_loc, filename):
     """Adds new locations to the database.
         params:
-            new_locs: a list of lists consisting of the company name, address and load time.
+            new_loc: a list consisting of the company name, address and load time.
             filename:  filename indicates what customer base should be retrieved from database. """
     
     # open database  
     with open(filename+'.pkl', 'rb') as f:
         database = pickle.load(f)
 
-    # add new locations to database
-    for new_loc in new_locs:
-        # add metadata for location
-        database[new_loc[0]] = {}
-        database[new_loc[0]]['Loadtime'] = new_loc[2] 
-        database[new_loc[0]]['Address'] = new_loc[1]
-        
-        # calculate distances to each existing location 
-        for existing_loc in database.keys():
-            database[new_loc[0]][existing_loc] = get_distance(new_loc[1], database[existing_loc]['Address'])
-            database[existing_loc][new_loc[0]] = get_distance(database[existing_loc]['Address'], new_loc[1])
+    # add metadata for location
+    database[new_loc[0]] = {}
+    database[new_loc[0]]['Address'] = new_loc[1]
+    database[new_loc[0]]['Loadtime'] = new_loc[2] 
+
+    # calculate distances to each existing location 
+    for existing_loc in database.keys():
+        database[new_loc[0]][existing_loc] = get_distance(new_loc[1], database[existing_loc]['Address'])
+        database[existing_loc][new_loc[0]] = get_distance(database[existing_loc]['Address'], new_loc[1])
 
     # save updated database
     with open(filename+'.pkl', 'wb') as f:
         pickle.dump(database, f)
 
-def remove_from_database(locs, filename):
+
+def remove_from_database(rem_loc, filename):
     """Removes locations from the database
         params: 
-            locs: names of companies to remove.
+            rem_loc: names of companies to remove.
             filename:  filename indicates what customer base should be retrieved from database. """
     
     # open database  
@@ -108,15 +107,24 @@ def remove_from_database(locs, filename):
         database = pickle.load(f)
 
     # remove all instances of location in database
-    for rem_loc in locs:
-        del database[rem_loc]
-        for loc in database.keys():
-            del database[loc][rem_loc]
+    del database[rem_loc]
+    for loc in database.keys():
+        del database[loc][rem_loc]
     
     # save updated database
     with open(filename+'.pkl', 'wb') as f:
         pickle.dump(database, f)
 
+def database_overview(filename):
+    with open(filename+'.pkl', 'rb') as f:
+        database = pickle.load(f)
+    for comp in database.keys():
+        print(comp)
+
+def distance(filename, source, dest):
+    with open(filename+'.pkl', 'rb') as f:
+        database = pickle.load(f)
+    print(database[source][dest])
 
 def create_distance_matrix(filename, companies):
     """ Returns distance matrix.
@@ -141,4 +149,7 @@ def create_distance_matrix(filename, companies):
                 exit(0)  
         distance_matrix.append(source_distances)
     return distance_matrix
+
+distance('Mypup_ams_cleaned', 'Joan Muyskenweg 6', 'Joan Muyskenweg 4')
+
 
