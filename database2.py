@@ -57,6 +57,7 @@ def initial_database(filename):
             filename:  filename indicates what customer base should be retrieved from database. """
     
     addresses = get_info(filename)
+    print(addresses)
     database = {}
 
 
@@ -76,7 +77,7 @@ def initial_database(filename):
 def add_to_database(new_loc, filename):
     """Adds new locations to the database.
         params:
-            new_loc: a list consisting of the company name, address and load time.
+            new_loc: a list consisting of the company name, address and load time. <- is het niet slimmer om dit uit de CSV te halen dan het met de hand in te moeten voeren
             filename:  filename indicates what customer base should be retrieved from database. """
     
     # open database  
@@ -164,10 +165,11 @@ def create_distance_matrix(filename, companies):
        params: 
             companies:  list containing company names for the locations to be visited on a particular day.  
             filename:  name of file with company info (without extension)"""
-    print('dit is de filename:', filename)
 
     with open(filename+'.pkl', 'rb') as f:
         database = pickle.load(f)
+
+    #print(database['Booking.com Atrium'])
 
     distance_matrix = []
     for source in companies:
