@@ -4,6 +4,7 @@ from __future__ import print_function
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 import database2 as db
+import visualizer as vs
 import pandas as pd
 import random
 import pickle
@@ -66,6 +67,7 @@ def print_solution(data, manager, routing, assignment, company_list):
         plan_output += ' {0} Load({1})\n'.format(company_list[manager.IndexToNode(index)],
                                                  route_load)
         companies_on_route.append(company_list[manager.IndexToNode(index)])
+        companies_on_route.append(company_list[0])
         plan_output += 'Travelling time of the route: {}minutes\n'.format(round(route_distance/60))
         plan_output += 'Loading time of the route: {} minutes\n'.format(route_load)
         print(plan_output)
@@ -103,8 +105,8 @@ def print_initial_solution(data, company_list):
     print(f'The total time driven is {round(total_distance/60)}\n')
     return total_distance
 
-def visualise(list_of_routes):
-    with open('Mypup_ams_cleaned'+'.pkl', 'rb') as f:
+def visualise(filename, list_of_routes):
+    with open(filename+'.pkl', 'rb') as f:
         database_pickle = pickle.load(f)
     
     list_of_addresses = []
@@ -115,8 +117,15 @@ def visualise(list_of_routes):
             #destination = database_pickle[route[i+1]]['Address']
             addresses_of_route.append(source)
         list_of_addresses.append(addresses_of_route)
+
     
-    return list_of_addresses
+    # creates a list of urls for every route, url is a link to google maps with the route
+    list_of_urls = []
+    for route in list_of_addresses:
+        list_of_urls.append(vs.create_url(route))
+        
+    
+    return list_of_urls
 
 def main():
     """Solve the CVRP problem."""
@@ -198,7 +207,7 @@ def main():
     #print(f'The overall travelling time that is saved is {round((total_initial_distance-total_optimized_distance)/60)} minutes')
 
     #this prints the routes as a list of lists with adresses
-    #print(visualise(list_of_routes))
+    print(visualise(filename, list_of_routes))
 
 if __name__ == '__main__':
     main()

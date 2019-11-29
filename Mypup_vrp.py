@@ -4,18 +4,25 @@ from __future__ import print_function
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 import database2 as db
+import visualizer as vs
 import pandas as pd
 import random
 import pickle
 
 
 def create_database(filename, company_list, create=True):
+
+    # call this function if you want to create a new pickle with distances
+    #db.initial_database(filename)
+
     # get the loadtimes of the daily_company_list
     db.create_distance_matrix(filename, company_list)
 
     with open(filename+'.pkl', 'rb') as f:
         database_pickle = pickle.load(f)
 
+    print(database_pickle['Mypup']['Booking.com Atrium'])
+    
     daily_company_loadtimes = []
     # get all the load times of the companies and append them in order to list
     for company in company_list:
@@ -26,22 +33,20 @@ def create_database(filename, company_list, create=True):
     data['distance_matrix'] = db.create_distance_matrix(filename, company_list)
     data['num_vehicles'] = 9
     data['demands'] = daily_company_loadtimes
-    print(sum(data['demands']))
-    data['vehicle_capacities'] = [180, 180, 180, 180, 180, 80, 80, 80, 80]
-    print(sum(data['vehicle_capacities']))
+    data['vehicle_capacities'] = [140, 140, 140, 140, 140, 40, 40, 40, 40]
     data['depot'] = 0
     data['initial_routes'] = [
-         [0, 22, 59, 78, 45, 43, 75, 53, 3, 34, 7, 17, 0],
-         [0, 48, 5, 6, 77, 52, 30, 32, 1, 40, 49, 50, 51, 0],
-         [0, 35, 36, 37, 38, 71, 60, 21, 62, 44, 18, 61, 73, 74, 2, 0],
-         [0, 29, 16, 55, 56, 57, 54, 9, 47, 11, 13, 10, 0],
-         [0, 15, 14, 27, 28, 20, 64, 63, 65, 12, 76, 0],
-         [0, 42, 41, 58, 46, 67, 33, 31, 69, 70, 66, 68, 72, 0],
-         [0, 4, 8, 19, 39, 23, 24, 25, 26, 0],
+         [0, 20, 57, 76, 43, 41, 73, 51, 3, 32, 7, 16, 0],
+         [0, 46, 5, 6, 75, 50, 28, 30, 1, 38, 47, 48, 49, 0],
+         [0, 33, 34, 35, 36, 69, 58, 19, 60, 42, 17, 59, 71, 72, 2, 0],
+         [0, 27, 15, 53, 54, 55, 52, 9, 45, 11, 13, 10, 0],
+         [0, 14, 25, 26, 62, 61, 63, 12, 74, 0],
+         [0, 40, 39, 56, 44, 65, 31, 29, 67, 68, 64, 66, 70, 0],
+         [0, 4, 8, 17, 37, 21, 22, 23, 24, 0],
          [],
          [],
-
      ]
+
     return data
 
 # prints the solution that was calculated by algorithm
@@ -49,29 +54,34 @@ def print_solution(data, manager, routing, assignment, company_list):
     """Prints assignment on console."""
     total_distance = 0
     total_load = 0
+    list_of_routes =[]
     for vehicle_id in range(data['num_vehicles']):
         index = routing.Start(vehicle_id)
         plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
         route_distance = 0
         route_load = 0
+        companies_on_route = []
         while not routing.IsEnd(index):
             node_index = manager.IndexToNode(index)
             route_load += data['demands'][node_index]
             plan_output += ' {0} Load({1}) -> '.format(company_list[node_index], route_load)
+            companies_on_route.append(company_list[node_index])
             previous_index = index
             index = assignment.Value(routing.NextVar(index))
             route_distance += routing.GetArcCostForVehicle(
                 previous_index, index, vehicle_id)
         plan_output += ' {0} Load({1})\n'.format(company_list[manager.IndexToNode(index)],
                                                  route_load)
+        companies_on_route.append(company_list[manager.IndexToNode(index)])
         plan_output += 'Travelling time of the route: {}minutes\n'.format(round(route_distance/60))
         plan_output += 'Loading time of the route: {} minutes\n'.format(route_load)
         print(plan_output)
         total_distance += route_distance
         total_load += route_load
+        list_of_routes.append(companies_on_route)
     print('Total travelling time of all routes: {}minutes'.format(round(total_distance/60)))
     print('Total loading time of all routes: {}'.format(total_load))
-    return total_distance
+    return total_distance, list_of_routes
 
 # prints the initial solution
 def print_initial_solution(data, company_list):
@@ -99,6 +109,28 @@ def print_initial_solution(data, company_list):
             print(f'Vehicle {vehicle_id} is not used in this solution\n')
     print(f'The total time driven is {round(total_distance/60)}\n')
     return total_distance
+
+def visualise(list_of_routes):
+    with open('Mypup_ams_cleaned'+'.pkl', 'rb') as f:
+        database_pickle = pickle.load(f)
+    
+    list_of_addresses = []
+    for route in list_of_routes:
+        addresses_of_route = []
+        for i, company in enumerate(route):
+            source = database_pickle[company]['Address']
+            #destination = database_pickle[route[i+1]]['Address']
+            addresses_of_route.append(source)
+        list_of_addresses.append(addresses_of_route)
+
+    
+    # creates a list of urls for every route, url is a link to google maps with the route
+    list_of_urls = []
+    for route in list_of_addresses:
+        list_of_urls.append(vs.create_url(route))
+        
+    
+    return list_of_urls
 
 def main():
     """Solve the CVRP problem."""
@@ -154,6 +186,10 @@ def main():
 
     total_initial_distance = print_initial_solution(data, company_list)
 
+    # # print the total capacity required and the total capacity available
+    # print(f'{sum(data["demands"])} is total loading time of all the locations')
+    # print(f'{sum(data["vehicle_capacities"])} this is the sum of the total capacities of the vehicles')
+
     # Setting first solution heuristic.
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
@@ -164,9 +200,12 @@ def main():
 
     # Print solution on console.
     if assignment:
-        total_optimized_distance = print_solution(data, manager, routing, assignment, company_list)
+        total_optimized_distance, list_of_routes = print_solution(data, manager, routing, assignment, company_list)
 
     print(f'The overall travelling time that is saved is {round((total_initial_distance-total_optimized_distance)/60)} minutes')
+
+    #this prints the routes as a list of lists with adresses
+    print(visualise(list_of_routes))
 
 if __name__ == '__main__':
     main()
