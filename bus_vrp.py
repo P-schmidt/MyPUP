@@ -129,10 +129,10 @@ def visualise(filename, list_of_routes):
 
 def main():
     """Solve the CVRP problem."""
-    filename = 'Mypup_ams_cleaned'
+    filename = 'data/Mypup_ams_cleaned'
 
     # create a list with all the companies as daily_company_list tester
-    df = pd.read_csv('Mypup_bus'+'.csv')
+    df = pd.read_csv("data/"+'Mypup_bus'+'.csv')
     df['Company'].replace(u'\xa0',u'', regex=True, inplace=True)
     company_list = df['Company'].values.tolist()
 

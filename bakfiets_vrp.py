@@ -134,7 +134,7 @@ def visualise(filename, list_of_routes):
 
 def main():
     """Solve the CVRP problem."""
-    filename = 'Mypup_bakfiets'
+    filename = 'data/Mypup_bakfiets'
 
     # create a list with all the companies as daily_company_list tester
     df = pd.read_csv(filename+'.csv')
