@@ -21,7 +21,7 @@ def create_database(filename, company_list, create=False):
     #db.add_to_database(['Infinity', 'Amstelveenseweg 500, 1081 KL Amsterdam NL', 5], 'Mypup_bakfiets')
 
     # this function can be used to update a column in the pkl
-    db.update_database('Timewindow', filename)
+    #db.update_database('Timewindow', filename)
 
     with open(filename+'.pkl', 'rb') as f:
         database_pickle = pickle.load(f)
@@ -39,49 +39,72 @@ def create_database(filename, company_list, create=False):
     # initialize the data as a dict and add keys with their values
     data = {}
     data['distance_matrix'] = db.create_distance_matrix(filename, company_list)
-    data['num_vehicles'] = 7
+    data['num_vehicles'] = 2
     data['demands'] = daily_company_loadtimes
-    data['vehicle_capacities'] = [140, 140, 140, 140, 140, 140, 100 ] 
+    data['vehicle_capacities'] = [50, 50]
     data['depot'] = 0
     data['time_windows'] = daily_company_timewindows
 
     return data
 
-# prints the solution that was calculated by algorithm
-def print_solution(data, manager, routing, assignment, company_list):
+# # prints the solution that was calculated by algorithm
+# def print_solution(data, manager, routing, assignment, company_list):
+#     """Prints assignment on console."""
+#     total_distance = 0
+#     total_load = 0
+#     list_of_routes =[]
+#     for vehicle_id in range(data['num_vehicles']):
+#         index = routing.Start(vehicle_id)
+#         plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
+#         route_distance = 0
+#         route_load = 0
+#         companies_on_route = []
+#         while not routing.IsEnd(index):
+#             node_index = manager.IndexToNode(index)
+#             route_load += data['demands'][node_index]
+#             plan_output += ' {0} Load({1}) -> '.format(company_list[node_index], route_load)
+#             companies_on_route.append(company_list[node_index])
+#             previous_index = index
+#             index = assignment.Value(routing.NextVar(index))
+#             route_distance += routing.GetArcCostForVehicle(
+#                 previous_index, index, vehicle_id)
+#         plan_output += ' {0} Load({1})\n'.format(company_list[manager.IndexToNode(index)],
+#                                                  route_load)
+#         companies_on_route.append(company_list[manager.IndexToNode(index)])
+#         plan_output += 'Travelling time of the route: {}minutes\n'.format(round(route_distance/60))
+#         plan_output += 'Loading time of the route: {} minutes\n'.format(route_load)
+#         print(plan_output)
+#         total_distance += route_distance
+#         total_load += route_load
+#         list_of_routes.append(companies_on_route)
+#     print('Total travelling time of all routes: {}minutes'.format(round(total_distance/60)))
+#     print('Total loading time of all routes: {}'.format(total_load))
+#     return total_distance, list_of_routes
+
+def print_solution(data, manager, routing, assignment):
     """Prints assignment on console."""
-    total_distance = 0
-    total_load = 0
-    list_of_routes =[]
+    time_dimension = routing.GetDimensionOrDie('Time')
+    total_time = 0
     for vehicle_id in range(data['num_vehicles']):
         index = routing.Start(vehicle_id)
         plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
-        route_distance = 0
-        route_load = 0
-        companies_on_route = []
         while not routing.IsEnd(index):
-            node_index = manager.IndexToNode(index)
-            route_load += data['demands'][node_index]
-            plan_output += ' {0} Load({1}) -> '.format(company_list[node_index], route_load)
-            companies_on_route.append(company_list[node_index])
-            previous_index = index
+            time_var = time_dimension.CumulVar(index)
+            plan_output += '{0} Time({1},{2}) -> '.format(
+                manager.IndexToNode(index), assignment.Min(time_var),
+                assignment.Max(time_var))
             index = assignment.Value(routing.NextVar(index))
-            route_distance += routing.GetArcCostForVehicle(
-                previous_index, index, vehicle_id)
-        plan_output += ' {0} Load({1})\n'.format(company_list[manager.IndexToNode(index)],
-                                                 route_load)
-        companies_on_route.append(company_list[manager.IndexToNode(index)])
-        plan_output += 'Travelling time of the route: {}minutes\n'.format(round(route_distance/60))
-        plan_output += 'Loading time of the route: {} minutes\n'.format(route_load)
+        time_var = time_dimension.CumulVar(index)
+        plan_output += '{0} Time({1},{2})\n'.format(manager.IndexToNode(index),
+                                                    assignment.Min(time_var),
+                                                    assignment.Max(time_var))
+        plan_output += 'Time of the route: {}min\n'.format(
+            assignment.Min(time_var))
         print(plan_output)
-        total_distance += route_distance
-        total_load += route_load
-        list_of_routes.append(companies_on_route)
-    print('Total travelling time of all routes: {}minutes'.format(round(total_distance/60)))
-    print('Total loading time of all routes: {}'.format(total_load))
-    return total_distance, list_of_routes
+        total_time += assignment.Min(time_var)
+    print('Total time of all routes: {}min'.format(total_time))
 
-def visualise(filename, list_of_routes):
+def open_maps(filename, list_of_routes):
     with open(filename+'.pkl', 'rb') as f:
         database_pickle = pickle.load(f)
     
@@ -103,12 +126,12 @@ def visualise(filename, list_of_routes):
     
     return list_of_urls
 
-def main():
+def main(visualise=False):
     """Solve the CVRP problem."""
-    filename = 'data/Mypup_ams_cleaned'
+    filename = 'data/Mypup_bakfiets'
 
     # create a list with all the companies as daily_company_list tester
-    df = pd.read_csv("data/"+'Mypup_bus'+'.csv')
+    df = pd.read_csv(filename+'.csv')
     df['Company'].replace(u'\xa0',u'', regex=True, inplace=True)
     company_list = df['Company'].values.tolist()
 
@@ -179,6 +202,7 @@ def main():
     for i in range(data['num_vehicles']):
         routing.AddVariableMinimizedByFinalizer(
             time_dimension.CumulVar(routing.Start(i)))
+            time_dimension.CumulVar()
         routing.AddVariableMinimizedByFinalizer(
             time_dimension.CumulVar(routing.End(i)))
 
@@ -191,14 +215,18 @@ def main():
     # Solve the problem.
     assignment = routing.SolveWithParameters(search_parameters)
 
-    # Print solution on console.
+    # # Print solution on console. (with own solution printer)
+    # if assignment:
+    #     total_optimized_distance, list_of_routes = print_solution(data, manager, routing, assignment, company_list)
+
     if assignment:
-        total_optimized_distance, list_of_routes = print_solution(data, manager, routing, assignment, company_list)
+        print_solution(data, manager, routing, assignment)
 
     #print(f'The overall travelling time that is saved is {round((total_initial_distance-total_optimized_distance)/60)} minutes')
 
     #this prints the routes as a list of lists with adresses
-    print(visualise(filename, list_of_routes))
+    if visualise == True:
+        open_maps(filename, list_of_routes)
 
 if __name__ == '__main__':
-    main()
+    main(visualise=True)

@@ -22,7 +22,5 @@ def create_url(list_of_addresses):
     if extra_url != "https://www.google.com/maps/dir/":
         webbrowser.open(url)
         webbrowser.open(extra_url)
-        return url, extra_url
     else:
         webbrowser.open(url)
-        return url

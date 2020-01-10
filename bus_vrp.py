@@ -1,4 +1,5 @@
 """Vehicles Routing Problem (VRP)."""
+# deze is al oud
 
 from __future__ import print_function
 from ortools.constraint_solver import routing_enums_pb2
@@ -33,7 +34,7 @@ def create_database(filename, company_list, create=True):
     data['demands'] = daily_company_loadtimes
     data['vehicle_capacities'] = [120, 120, 120, 120, 120, 120, 60]
     data['depot'] = 0
-    data['initial_routes'] = [
+    data['initial_routes'] = [  
          [0, 20, 57, 76, 43, 41, 73, 51, 3, 32, 7, 16, 0],
          [0, 46, 5, 6, 75, 50, 28, 30, 1, 38, 47, 48, 49, 0],
          [0, 33, 34, 35, 36, 69, 58, 19, 60, 42, 17, 59, 71, 72, 2, 0],

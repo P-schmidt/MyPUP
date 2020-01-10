@@ -81,7 +81,7 @@ def print_solution(data, manager, routing, assignment, company_list):
     print('Total loading time of all routes: {}'.format(total_load))
     return total_distance, list_of_routes
 
-def visualise(filename, list_of_routes):
+def open_maps(filename, list_of_routes):
     with open(filename+'.pkl', 'rb') as f:
         database_pickle = pickle.load(f)
     
@@ -103,7 +103,7 @@ def visualise(filename, list_of_routes):
     
     return list_of_urls
 
-def main():
+def main(visualise=False):
     """Solve the CVRP problem."""
     filename = 'data/Mypup_ams_cleaned'
 
@@ -198,7 +198,8 @@ def main():
     #print(f'The overall travelling time that is saved is {round((total_initial_distance-total_optimized_distance)/60)} minutes')
 
     #this prints the routes as a list of lists with adresses
-    print(visualise(filename, list_of_routes))
+    if visualise == True:
+        open_maps(filename, list_of_routes)
 
 if __name__ == '__main__':
-    main()
+    main(visualise=True)
