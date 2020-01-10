@@ -20,8 +20,8 @@ def create_database(filename, company_list, create=False):
     # this function can be used to add a company to the database pickle
     #db.add_to_database(['Infinity', 'Amstelveenseweg 500, 1081 KL Amsterdam NL', 5], 'Mypup_bakfiets')
 
-    # get the loadtimes of the daily_company_list
-    db.create_distance_matrix(filename, company_list)
+    # this function can be used to update a column in the pkl
+    db.update_database('Timewindow', filename)
 
     with open(filename+'.pkl', 'rb') as f:
         database_pickle = pickle.load(f)
@@ -29,9 +29,7 @@ def create_database(filename, company_list, create=False):
     daily_company_loadtimes = []
     # get all the load times of the companies and append them in order to list
     for company in company_list:
-        daily_company_loadtimes.append(database_pickle[company]['Loadtime'])
-
-    
+        daily_company_loadtimes.append(database_pickle[company]['Loadtime'])  
 
     daily_company_timewindows = []
     # get the time windows for the companies and append them in order to list
@@ -41,9 +39,9 @@ def create_database(filename, company_list, create=False):
     # initialize the data as a dict and add keys with their values
     data = {}
     data['distance_matrix'] = db.create_distance_matrix(filename, company_list)
-    data['num_vehicles'] = 2
+    data['num_vehicles'] = 7
     data['demands'] = daily_company_loadtimes
-    data['vehicle_capacities'] = [50, 50]
+    data['vehicle_capacities'] = [140, 140, 140, 140, 140, 140, 100 ] 
     data['depot'] = 0
     data['time_windows'] = daily_company_timewindows
 
@@ -107,18 +105,18 @@ def visualise(filename, list_of_routes):
 
 def main():
     """Solve the CVRP problem."""
-    filename = 'data/Mypup_bakfiets'
+    filename = 'data/Mypup_ams_cleaned'
 
     # create a list with all the companies as daily_company_list tester
-    df = pd.read_csv(filename+'.csv')
+    df = pd.read_csv("data/"+'Mypup_bus'+'.csv')
     df['Company'].replace(u'\xa0',u'', regex=True, inplace=True)
     company_list = df['Company'].values.tolist()
 
     # this is the list of companies that have no packages to be delivered
-    companies_to_remove = ['UVA BH / OIH', 'UVA UB Singel 425', 'Spakler', 'Nationale Nederlanden Amsterdam', 'Infinity']
+    #companies_to_remove = ['UVA BH / OIH', 'UVA UB Singel 425', 'Spakler', 'Nationale Nederlanden Amsterdam', 'Infinity']
 
     # removes the companies to be skipped from the company_list
-    [company_list.remove(company) for company in companies_to_remove]
+    #[company_list.remove(company) for company in companies_to_remove]
 
     # Instantiate the data problem.
     data = create_database(filename, company_list)
@@ -138,6 +136,21 @@ def main():
         to_node = manager.IndexToNode(to_index)
         return data['distance_matrix'][from_node][to_node]
 
+    def demand_callback(from_index):
+        """Returns the demand of the node."""
+        # Convert from routing variable Index to demands NodeIndex.
+        from_node = manager.IndexToNode(from_index)
+        return data['demands'][from_node]
+
+    demand_callback_index = routing.RegisterUnaryTransitCallback(
+        demand_callback)
+    routing.AddDimensionWithVehicleCapacity(
+        demand_callback_index,
+        0,  # null capacity slack
+        data['vehicle_capacities'],  # vehicle maximum capacities
+        True,  # start cumul to zero
+        'Capacity')
+
 
     transit_callback_index = routing.RegisterTransitCallback(time_callback)
 
@@ -147,8 +160,8 @@ def main():
     time = 'Time'
     routing.AddDimension(
         transit_callback_index,
-        10000,  # allow waiting time
-        100000,  # maximum time per vehicle
+        600,  # allow waiting time
+        10000,  # maximum time per vehicle
         False,  # Don't force start cumul to zero.
         time)
     time_dimension = routing.GetDimensionOrDie(time)
@@ -172,20 +185,20 @@ def main():
     # Setting first solution heuristic.
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
-        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+        routing_enums_pb2.FirstSolutionStrategy.PATH_MOST_CONSTRAINED_ARC)
+    
 
     # Solve the problem.
     assignment = routing.SolveWithParameters(search_parameters)
 
     # Print solution on console.
     if assignment:
-        print('hallo')
-        print_solution(data, manager, routing, assignment)
+        total_optimized_distance, list_of_routes = print_solution(data, manager, routing, assignment, company_list)
 
     #print(f'The overall travelling time that is saved is {round((total_initial_distance-total_optimized_distance)/60)} minutes')
 
     #this prints the routes as a list of lists with adresses
-    #print(visualise(filename, list_of_routes))
+    print(visualise(filename, list_of_routes))
 
 if __name__ == '__main__':
     main()
