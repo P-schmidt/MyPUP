@@ -3,17 +3,18 @@
 from __future__ import print_function
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
-import database2 as db
+import database as db
 import visualizer as vs
 import pandas as pd
 import random
 import pickle
 
 
-def create_database(filename, company_list, create=True):
+def create_database(filename, company_list, create=False):
 
     # call this function if you want to create a new pickle with distances
-    #db.initial_database(filename)
+    if create == True:
+        db.initial_database(filename)
 
     # this function can be used to add a company to the database pickle
     #db.add_to_database(['Infinity', 'Amstelveenseweg 500, 1081 KL Amsterdam NL', 5], 'Mypup_bakfiets')
@@ -29,7 +30,15 @@ def create_database(filename, company_list, create=True):
     for company in company_list:
         daily_company_loadtimes.append(database_pickle[company]['Loadtime'])
 
+    
+
+    daily_company_timewindows = []
+    # get the time windows for the companies and append them in order to list
+    for company in company_list:
+        daily_company_timewindows.append(database_pickle[company]['Timewindow'])
+
     print(company_list)
+    print(daily_company_timewindows)
 
     # initialize the data as a dict and add keys with their values
     data = {}
@@ -38,13 +47,7 @@ def create_database(filename, company_list, create=True):
     data['demands'] = daily_company_loadtimes
     data['vehicle_capacities'] = [50, 50]
     data['depot'] = 0
-    # initial routes doesn't work with this limited list because it includes locations that are not done on the bakfiets
-    # data['initial_routes'] = [
-    #      [],
-    #      [],
-    #      [],
-    #      [],
-    #  ]
+    data['time_windows'] = daily_company_timewindows
 
     return data
 

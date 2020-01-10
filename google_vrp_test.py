@@ -3,6 +3,7 @@
 from __future__ import print_function
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
+from ast import literal_eval
 import database as db
 import visualizer as vs
 import pandas as pd
@@ -10,10 +11,14 @@ import random
 import pickle
 
 
-def create_database(filename, company_list, create=True):
+def create_database(filename, company_list, create=False):
 
     # call this function if you want to create a new pickle with distances
-    #db.initial_database(filename)
+    if create == True:
+        db.initial_database(filename)
+
+    # this function can be used to add a company to the database pickle
+    #db.add_to_database(['Infinity', 'Amstelveenseweg 500, 1081 KL Amsterdam NL', 5], 'Mypup_bakfiets')
 
     # get the loadtimes of the daily_company_list
     db.create_distance_matrix(filename, company_list)
@@ -26,20 +31,21 @@ def create_database(filename, company_list, create=True):
     for company in company_list:
         daily_company_loadtimes.append(database_pickle[company]['Loadtime'])
 
+    
+
+    daily_company_timewindows = []
+    # get the time windows for the companies and append them in order to list
+    for company in company_list:
+        daily_company_timewindows.append(literal_eval(database_pickle[company]['Timewindow']))
+
     # initialize the data as a dict and add keys with their values
     data = {}
     data['distance_matrix'] = db.create_distance_matrix(filename, company_list)
-    data['num_vehicles'] = 7
+    data['num_vehicles'] = 2
     data['demands'] = daily_company_loadtimes
-    data['vehicle_capacities'] = [120, 120, 120, 120, 120, 120, 60]
+    data['vehicle_capacities'] = [50, 50]
     data['depot'] = 0
-    data['initial_routes'] = [
-         [0, 20, 57, 76, 43, 41, 73, 51, 3, 32, 7, 16, 0],
-         [0, 46, 5, 6, 75, 50, 28, 30, 1, 38, 47, 48, 49, 0],
-         [0, 33, 34, 35, 36, 69, 58, 19, 60, 42, 17, 59, 71, 72, 2, 0],
-         [0, 27, 15, 53, 54, 55, 52, 9, 45, 11, 13, 10, 0],
-         [0, 14, 25, 26, 62, 61, 63, 12, 74, 0]
-     ]
+    data['time_windows'] = daily_company_timewindows
 
     return data
 
@@ -67,7 +73,6 @@ def print_solution(data, manager, routing, assignment, company_list):
         plan_output += ' {0} Load({1})\n'.format(company_list[manager.IndexToNode(index)],
                                                  route_load)
         companies_on_route.append(company_list[manager.IndexToNode(index)])
-        companies_on_route.append(company_list[0])
         plan_output += 'Travelling time of the route: {}minutes\n'.format(round(route_distance/60))
         plan_output += 'Loading time of the route: {} minutes\n'.format(route_load)
         print(plan_output)
@@ -77,33 +82,6 @@ def print_solution(data, manager, routing, assignment, company_list):
     print('Total travelling time of all routes: {}minutes'.format(round(total_distance/60)))
     print('Total loading time of all routes: {}'.format(total_load))
     return total_distance, list_of_routes
-
-# prints the initial solution
-def print_initial_solution(data, company_list):
-    initial_routes = 'initial_routes'
-    total_distance = 0
-    total_loadtime = 0
-    for vehicle_id in range(data['num_vehicles']):
-        if data[initial_routes][vehicle_id] != []:
-            whole_route = f"Route for vehicle {vehicle_id} start at {company_list[data[initial_routes][vehicle_id][0]]} -> "
-            distance = 0
-            loadtime = 0
-            for i in range(0, len(data['initial_routes'][vehicle_id])-1):
-                source = data[initial_routes][vehicle_id][i]
-                destination = data[initial_routes][vehicle_id][i+1]
-                whole_route += f'{company_list[data[initial_routes][vehicle_id][i]]} -> '
-                distance += data['distance_matrix'][source][destination]
-                loadtime += data['demands'][source]
-            whole_route += f'-> {company_list[data[initial_routes][vehicle_id][0]]}'
-            distance += data['distance_matrix'][data[initial_routes][vehicle_id][len(data['initial_routes'][vehicle_id])-1]][len(data['initial_routes'][vehicle_id])]
-            print(whole_route)
-            print(f'total time driven is {round(distance/60)}')
-            print(f'total loadtime is {loadtime}\n')
-            total_distance += distance
-        else:
-            print(f'Vehicle {vehicle_id} is not used in this solution\n')
-    print(f'The total time driven is {round(total_distance/60)}\n')
-    return total_distance
 
 def visualise(filename, list_of_routes):
     with open(filename+'.pkl', 'rb') as f:
@@ -129,22 +107,18 @@ def visualise(filename, list_of_routes):
 
 def main():
     """Solve the CVRP problem."""
-    filename = 'data/Mypup_ams_cleaned'
+    filename = 'data/Mypup_bakfiets'
 
     # create a list with all the companies as daily_company_list tester
-    df = pd.read_csv("data/"+'Mypup_bus'+'.csv')
+    df = pd.read_csv(filename+'.csv')
     df['Company'].replace(u'\xa0',u'', regex=True, inplace=True)
     company_list = df['Company'].values.tolist()
 
-    #print(company_list)
-
     # this is the list of companies that have no packages to be delivered
-    #companies_to_remove = ['HVA FMB','HVA DMH', 'HVA NTH', 'Nieuw Amsterdam', 'Quarter Avenue', 'Quarter Podium']
+    companies_to_remove = ['UVA BH / OIH', 'UVA UB Singel 425', 'Spakler', 'Nationale Nederlanden Amsterdam', 'Infinity']
 
     # removes the companies to be skipped from the company_list
-    #[company_list.remove(company) for company in companies_to_remove]
-    
-    print('Total number of companies to be visited', len(company_list))
+    [company_list.remove(company) for company in companies_to_remove]
 
     # Instantiate the data problem.
     data = create_database(filename, company_list)
@@ -157,40 +131,43 @@ def main():
     routing = pywrapcp.RoutingModel(manager)
 
 
-    # Create and register a transit callback.
-    def distance_callback(from_index, to_index):
-        """Returns the distance between the two nodes."""
-        # Convert from routing variable Index to distance matrix NodeIndex.
+    def time_callback(from_index, to_index):
+        """Returns the travel time between the two nodes."""
+        # Convert from routing variable Index to time matrix NodeIndex.
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
         return data['distance_matrix'][from_node][to_node]
 
-    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+
+    transit_callback_index = routing.RegisterTransitCallback(time_callback)
 
     # Define cost of each arc.
     routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
 
-    # Add Capacity constraint.
-    def demand_callback(from_index):
-        """Returns the demand of the node."""
-        # Convert from routing variable Index to demands NodeIndex.
-        from_node = manager.IndexToNode(from_index)
-        return data['demands'][from_node]
-
-    demand_callback_index = routing.RegisterUnaryTransitCallback(
-        demand_callback)
-    routing.AddDimensionWithVehicleCapacity(
-        demand_callback_index,
-        0,  # null capacity slack
-        data['vehicle_capacities'],  # vehicle maximum capacities
-        True,  # start cumul to zero
-        'Capacity')
-
-    #total_initial_distance = print_initial_solution(data, company_list)
-
-    # print the total capacity required and the total capacity available
-    print(f'{sum(data["demands"])} is total loading time of all the locations')
-    print(f'{sum(data["vehicle_capacities"])} this is the sum of the total capacities of the vehicles')
+    time = 'Time'
+    routing.AddDimension(
+        transit_callback_index,
+        10000,  # allow waiting time
+        100000,  # maximum time per vehicle
+        False,  # Don't force start cumul to zero.
+        time)
+    time_dimension = routing.GetDimensionOrDie(time)
+    # Add time window constraints for each location except depot.
+    for location_idx, time_window in enumerate(data['time_windows']):
+        if location_idx == 0:
+            continue
+        index = manager.NodeToIndex(location_idx)
+        time_dimension.CumulVar(index).SetRange(time_window[0], time_window[1])
+    # Add time window constraints for each vehicle start node.
+    for vehicle_id in range(data['num_vehicles']):
+        index = routing.Start(vehicle_id)
+        time_dimension.CumulVar(index).SetRange(data['time_windows'][0][0],
+                                                data['time_windows'][0][1])
+    for i in range(data['num_vehicles']):
+        routing.AddVariableMinimizedByFinalizer(
+            time_dimension.CumulVar(routing.Start(i)))
+        routing.AddVariableMinimizedByFinalizer(
+            time_dimension.CumulVar(routing.End(i)))
 
     # Setting first solution heuristic.
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
@@ -202,12 +179,13 @@ def main():
 
     # Print solution on console.
     if assignment:
-        total_optimized_distance, list_of_routes = print_solution(data, manager, routing, assignment, company_list)
+        print('hallo')
+        print_solution(data, manager, routing, assignment)
 
     #print(f'The overall travelling time that is saved is {round((total_initial_distance-total_optimized_distance)/60)} minutes')
 
     #this prints the routes as a list of lists with adresses
-    print(visualise(filename, list_of_routes))
+    #print(visualise(filename, list_of_routes))
 
 if __name__ == '__main__':
     main()
