@@ -115,6 +115,8 @@ def update_database(column, filename):
         index = 1
     elif column == 'Loadtime':
         index = 2
+    elif column == 'Timewindow':
+        index = 3
     else:
         print('update_database terminated because column:', column, 'does not exist')
         exit()
