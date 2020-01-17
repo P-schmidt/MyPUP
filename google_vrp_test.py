@@ -41,73 +41,49 @@ def create_database(filename, company_list, create=False):
     data['distance_matrix'] = db.create_distance_matrix(filename, company_list)
     data['num_vehicles'] = 2
     data['demands'] = daily_company_loadtimes
-    data['vehicle_capacities'] = [50, 50]
+    data['vehicle_capacities'] = [45, 60]
     data['depot'] = 0
     data['time_windows'] = daily_company_timewindows
 
     return data
 
-# # prints the solution that was calculated by algorithm
-# def print_solution(data, manager, routing, assignment, company_list):
-#     """Prints assignment on console."""
-#     total_distance = 0
-#     total_load = 0
-#     list_of_routes =[]
-#     for vehicle_id in range(data['num_vehicles']):
-#         index = routing.Start(vehicle_id)
-#         plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
-#         route_distance = 0
-#         route_load = 0
-#         companies_on_route = []
-#         while not routing.IsEnd(index):
-#             node_index = manager.IndexToNode(index)
-#             route_load += data['demands'][node_index]
-#             plan_output += ' {0} Load({1}) -> '.format(company_list[node_index], route_load)
-#             companies_on_route.append(company_list[node_index])
-#             previous_index = index
-#             index = assignment.Value(routing.NextVar(index))
-#             route_distance += routing.GetArcCostForVehicle(
-#                 previous_index, index, vehicle_id)
-#         plan_output += ' {0} Load({1})\n'.format(company_list[manager.IndexToNode(index)],
-#                                                  route_load)
-#         companies_on_route.append(company_list[manager.IndexToNode(index)])
-#         plan_output += 'Travelling time of the route: {}minutes\n'.format(round(route_distance/60))
-#         plan_output += 'Loading time of the route: {} minutes\n'.format(route_load)
-#         print(plan_output)
-#         total_distance += route_distance
-#         total_load += route_load
-#         list_of_routes.append(companies_on_route)
-#     print('Total travelling time of all routes: {}minutes'.format(round(total_distance/60)))
-#     print('Total loading time of all routes: {}'.format(total_load))
-#     return total_distance, list_of_routes
-
-def print_solution(data, manager, routing, assignment):
+def print_solution(data, manager, routing, assignment, company_list):
     """Prints assignment on console."""
     time_dimension = routing.GetDimensionOrDie('Time')
     total_time = 0
+    list_of_routes =[]
     for vehicle_id in range(data['num_vehicles']):
         index = routing.Start(vehicle_id)
         plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
+        route_load = 0
+        companies_on_route = []
         while not routing.IsEnd(index):
+            node_index = manager.IndexToNode(index)
             time_var = time_dimension.CumulVar(index)
+            route_load += data['demands'][node_index]
             plan_output += '{0} Time({1},{2}) -> '.format(
-                manager.IndexToNode(index), assignment.Min(time_var),
+                company_list[node_index], assignment.Min(time_var),
                 assignment.Max(time_var))
+            companies_on_route.append(company_list[node_index])
             index = assignment.Value(routing.NextVar(index))
         time_var = time_dimension.CumulVar(index)
-        plan_output += '{0} Time({1},{2})\n'.format(manager.IndexToNode(index),
+        plan_output += '{0} Time({1},{2})\n'.format(company_list[manager.IndexToNode(index)],
                                                     assignment.Min(time_var),
                                                     assignment.Max(time_var))
+        companies_on_route.append(company_list[manager.IndexToNode(index)])
         plan_output += 'Time of the route: {}min\n'.format(
-            assignment.Min(time_var))
+            round(assignment.Min(time_var)/60))
+        plan_output += 'Loading time of the route: {} minutes\n'.format(route_load) 
+        list_of_routes.append(companies_on_route)
         print(plan_output)
         total_time += assignment.Min(time_var)
-    print('Total time of all routes: {}min'.format(total_time))
+    print('Total time of all routes: {}min'.format(round(total_time/60)))   
+    return list_of_routes
 
 def open_maps(filename, list_of_routes):
     with open(filename+'.pkl', 'rb') as f:
         database_pickle = pickle.load(f)
-    
+
     list_of_addresses = []
     for route in list_of_routes:
         addresses_of_route = []
@@ -123,12 +99,11 @@ def open_maps(filename, list_of_routes):
     for route in list_of_addresses:
         list_of_urls.append(vs.create_url(route))
         
-    
     return list_of_urls
 
 def main(visualise=False):
     """Solve the CVRP problem."""
-    filename = 'data/Mypup_bakfiets'
+    filename = 'data/Mypup_bus'
 
     # create a list with all the companies as daily_company_list tester
     df = pd.read_csv(filename+'.csv')
@@ -157,7 +132,7 @@ def main(visualise=False):
         # Convert from routing variable Index to time matrix NodeIndex.
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
-        return data['distance_matrix'][from_node][to_node]
+        return (data['demands'][from_node]*60) + data['distance_matrix'][from_node][to_node]
 
     def demand_callback(from_index):
         """Returns the demand of the node."""
@@ -202,9 +177,24 @@ def main(visualise=False):
     for i in range(data['num_vehicles']):
         routing.AddVariableMinimizedByFinalizer(
             time_dimension.CumulVar(routing.Start(i)))
-            time_dimension.CumulVar()
         routing.AddVariableMinimizedByFinalizer(
             time_dimension.CumulVar(routing.End(i)))
+
+    # sets the capacity constraint
+    def demand_callback(from_index):
+        """Returns the demand of the node."""
+        # Convert from routing variable Index to demands NodeIndex.
+        from_node = manager.IndexToNode(from_index)
+        return data['demands'][from_node]
+
+        demand_callback_index = routing.RegisterUnaryTransitCallback(
+            demand_callback)
+        routing.AddDimensionWithVehicleCapacity(
+            demand_callback_index,
+            0,  # null capacity slack
+            data['vehicle_capacities'],  # vehicle maximum capacities
+            True,  # start cumul to zero
+            'Capacity') 
 
     # Setting first solution heuristic.
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
@@ -220,7 +210,7 @@ def main(visualise=False):
     #     total_optimized_distance, list_of_routes = print_solution(data, manager, routing, assignment, company_list)
 
     if assignment:
-        print_solution(data, manager, routing, assignment)
+        list_of_routes = print_solution(data, manager, routing, assignment, company_list)
 
     #print(f'The overall travelling time that is saved is {round((total_initial_distance-total_optimized_distance)/60)} minutes')
 
@@ -229,4 +219,4 @@ def main(visualise=False):
         open_maps(filename, list_of_routes)
 
 if __name__ == '__main__':
-    main(visualise=True)
+    main(visualise=False)

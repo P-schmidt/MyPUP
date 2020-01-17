@@ -57,12 +57,10 @@ def initial_database(filename):
             filename:  filename indicates what customer base should be retrieved from database. """
     
     addresses = get_info(filename)
-    print(addresses)
     database = {}
 
 
     for source in addresses:
-        print(source)
         # add metadata for location
         database[source[0]] = {}
         database[source[0]]['Address'] = source[1]
