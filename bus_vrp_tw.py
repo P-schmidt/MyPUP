@@ -21,7 +21,7 @@ def create_database(filename, company_list, create=False):
     #db.add_to_database(['Infinity', 'Amstelveenseweg 500, 1081 KL Amsterdam NL', 5], 'Mypup_bakfiets')
 
     # this function can be used to update a column in the pkl
-    #db.update_database('Timewindow', filename)
+    db.update_database('Timewindow', filename)
 
     with open(filename+'.pkl', 'rb') as f:
         database_pickle = pickle.load(f)
@@ -40,8 +40,9 @@ def create_database(filename, company_list, create=False):
     data = {}
     data['distance_matrix'] = db.create_distance_matrix(filename, company_list)
     data['demands'] = daily_company_loadtimes
-    print(sum(data['demands']))
-    data['vehicle_capacities'] = [200, 200, 200, 200, 200]
+    print('Total demands = ', sum(data['demands']))
+    data['vehicle_capacities'] = [200, 150, 150, 150, 200, 200, 200]
+    print('Total capacity = ', sum(data['vehicle_capacities']))
     data['num_vehicles'] = len(data['vehicle_capacities'])
     data['depot'] = 0
     data['time_windows'] = daily_company_timewindows
@@ -75,9 +76,10 @@ def print_solution(data, manager, routing, assignment, company_list):
         companies_on_route.append(company_list[manager.IndexToNode(index)])
         plan_output += 'Time of the route: {}min\n'.format(
             round(assignment.Min(time_var)/60))
-        plan_output += 'Loading time of the route: {} minutes\n'.format(route_load) 
+        plan_output += 'Loading time/capacity of the route: {} minutes\n'.format(route_load) 
         list_of_routes.append(companies_on_route)
         print(plan_output)
+        print('Total travelling time of route: {}\n'.format(round(assignment.Min(time_var)/60)-route_load))
         total_load += route_load
         total_time += assignment.Min(time_var)
     print('Total time of all routes: {}min'.format(round(total_time/60)))
@@ -116,10 +118,13 @@ def main(visualise=False):
     company_list = df['Company'].values.tolist()
 
     # this is the list of companies that have no packages to be delivered
-    #companies_to_remove = ['UVA BH / OIH', 'UVA UB Singel 425', 'Spakler', 'Nationale Nederlanden Amsterdam', 'Infinity']
+    companies_to_remove = ['Newday Offices Almere']
 
     # removes the companies to be skipped from the company_list
-    #[company_list.remove(company) for company in companies_to_remove]
+    [company_list.remove(company) for company in companies_to_remove]
+
+
+    print('Total number of companies to be visited', len(company_list))
 
     # Instantiate the data problem.
     data = create_database(filename, company_list)
@@ -137,6 +142,7 @@ def main(visualise=False):
         # Convert from routing variable Index to time matrix NodeIndex.
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
+        # data['demands'] adds the loading time to the travel time
         return (data['demands'][from_node]*60) + data['distance_matrix'][from_node][to_node]
 
     def demand_callback(from_index):
@@ -163,8 +169,8 @@ def main(visualise=False):
     time = 'Time'
     routing.AddDimension(
         transit_callback_index,
-        20000,  # allow waiting time
-        200000,  # maximum time per vehicle
+        2000,  # allow waiting time
+        14400,  # maximum time per vehicle
         False,  # Don't force start cumul to zero.
         time)
     time_dimension = routing.GetDimensionOrDie(time)
@@ -215,6 +221,7 @@ def main(visualise=False):
     #     total_optimized_distance, list_of_routes = print_solution(data, manager, routing, assignment, company_list)
 
     if assignment:
+        print('aangekomen')
         list_of_routes = print_solution(data, manager, routing, assignment, company_list)
 
     #print(f'The overall travelling time that is saved is {round((total_initial_distance-total_optimized_distance)/60)} minutes')
@@ -224,4 +231,4 @@ def main(visualise=False):
         open_maps(filename, list_of_routes)
 
 if __name__ == '__main__':
-    main(visualise=False)
+    main(visualise=True)

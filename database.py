@@ -72,6 +72,7 @@ def initial_database(filename):
         for destination in addresses:
             database[source[0]][destination[0]] = get_distance(source[1], destination[1])
         print(source[0], 'is done')
+
     with open(filename+'.pkl', 'wb') as f:
         pickle.dump(database, f)
 
@@ -171,8 +172,6 @@ def create_distance_matrix(filename, companies):
 
     with open(filename+'.pkl', 'rb') as f:
         database = pickle.load(f)
-
-    #print(database['Booking.com Atrium'])
 
     distance_matrix = []
     for source in companies:

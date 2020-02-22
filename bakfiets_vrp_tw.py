@@ -41,7 +41,7 @@ def create_database(filename, company_list, create=False):
     data['distance_matrix'] = db.create_distance_matrix(filename, company_list)
     data['num_vehicles'] = 2
     data['demands'] = daily_company_loadtimes
-    data['vehicle_capacities'] = [45, 60]
+    data['vehicle_capacities'] = [60, 60]
     data['depot'] = 0
     data['time_windows'] = daily_company_timewindows
 
@@ -101,7 +101,7 @@ def open_maps(filename, list_of_routes):
         
     return list_of_urls
 
-def main(visualise=False):
+def main(visualise):
     """Solve the CVRP problem."""
     filename = 'data/Mypup_bakfiets'
 

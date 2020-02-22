@@ -1,6 +1,6 @@
 # https://www.google.com/maps/dir/Prinsengracht+219A,+1015+DT+Amsterdam/Amstelvlietstraat+330,+Amsterdam,+Netherlands/Kolenkitbuurt,+Amsterdam/@52.3618908,4.8383503,13z voorbeeld link
 import webbrowser
-
+import time
 
 def create_url(list_of_addresses):
 
@@ -20,7 +20,8 @@ def create_url(list_of_addresses):
         else:
             extra_url += address+'/'
     if extra_url != "https://www.google.com/maps/dir/":
-        webbrowser.open(url)
-        webbrowser.open(extra_url)
+        webbrowser.get('firefox').open_new(url)
+        time.sleep(2)
+        webbrowser.get('firefox').open_new_tab(extra_url)
     else:
-        webbrowser.open(url)
+        webbrowser.get('firefox').open_new(url)
