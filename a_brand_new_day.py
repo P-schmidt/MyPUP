@@ -13,7 +13,7 @@ def main():
 
     while bool_add == 'y':
         add_comp = input('Geef info van nieuwe bedrijf als volgt: bedrijfsnaam,adres,laadtijd. ')
-        db.add_to_database(add_comp.split(','), 'Mypup_ams_cleaned')
+        db.add_to_database(add_comp.split(','), 'data/Mypup_ams_cleaned')
         bool_add= input('Moet er nog een bedrijf toegevoegd worden? Typ y of n: ')
         while bool_add not in ('y', 'n'):
             bool_add = input('Typ y of n: ')
@@ -24,7 +24,7 @@ def main():
 
     while bool_remove == 'y':
         company = input('Geef naam van te verwijderen bedrijf: ')
-        db.remove_from_database(company, 'Mypup_ams_cleaned')
+        db.remove_from_database(company, 'data/Mypup_ams_cleaned')
         bool_remove = input('Moet er nog een bedrijf verwijderd worden? Typ y of n: ')
         while bool_remove not in ('y', 'n'):
             bool_remove = input('Typ y of n: ')
@@ -34,7 +34,7 @@ def main():
         make_route = input('Typ y of n: ')
 
     if make_route == 'y':
-        with open('Mypup_ams_cleaned.pkl', 'rb') as f:
+        with open('data/Mypup_ams_cleaned.pkl', 'rb') as f:
             database = pickle.load(f)
         visit_all = input('Moeten alle bedrijven bezorgd worden? Typ y of n: ')
         while visit_all not in ('y', 'n'):
