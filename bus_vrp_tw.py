@@ -11,7 +11,7 @@ import random
 import pickle
 
 
-def create_database(filename, company_list, create=False):
+def create_database(filename, company_list, capacities=[200, 150, 150, 150, 200, 200, 200], create=False):
 
     # call this function if you want to create a new pickle with distances
     if create == True:
@@ -25,11 +25,11 @@ def create_database(filename, company_list, create=False):
 
     with open(filename+'.pkl', 'rb') as f:
         database_pickle = pickle.load(f)
-    
+
     daily_company_loadtimes = []
     # get all the load times of the companies and append them in order to list
     for company in company_list:
-        daily_company_loadtimes.append(database_pickle[company]['Loadtime'])  
+        daily_company_loadtimes.append(database_pickle[company]['Loadtime'])
 
     daily_company_timewindows = []
     # get the time windows for the companies and append them in order to list
@@ -41,7 +41,7 @@ def create_database(filename, company_list, create=False):
     data['distance_matrix'] = db.create_distance_matrix(filename, company_list)
     data['demands'] = daily_company_loadtimes
     print('Total demands = ', sum(data['demands']))
-    data['vehicle_capacities'] = [200, 150, 150, 150, 200, 200, 200]
+    data['vehicle_capacities'] = capacities
     print('Total capacity = ', sum(data['vehicle_capacities']))
     data['num_vehicles'] = len(data['vehicle_capacities'])
     data['depot'] = 0
@@ -76,7 +76,7 @@ def print_solution(data, manager, routing, assignment, company_list):
         companies_on_route.append(company_list[manager.IndexToNode(index)])
         plan_output += 'Time of the route: {}min\n'.format(
             round(assignment.Min(time_var)/60))
-        plan_output += 'Loading time/capacity of the route: {} minutes\n'.format(route_load) 
+        plan_output += 'Loading time/capacity of the route: {} minutes\n'.format(route_load)
         list_of_routes.append(companies_on_route)
         print(plan_output)
         print('Total travelling time of route: {}\n'.format(round(assignment.Min(time_var)/60)-route_load))
@@ -84,7 +84,7 @@ def print_solution(data, manager, routing, assignment, company_list):
         total_time += assignment.Min(time_var)
     print('Total time of all routes: {}min'.format(round(total_time/60)))
     print('Total loading time of all routes: {}'.format(total_load))
-   
+
     return list_of_routes
 
 def open_maps(filename, list_of_routes):
@@ -100,12 +100,12 @@ def open_maps(filename, list_of_routes):
             addresses_of_route.append(source)
         list_of_addresses.append(addresses_of_route)
 
-    
+
     # creates a list of urls for every route, url is a link to google maps with the route
     list_of_urls = []
     for route in list_of_addresses:
         list_of_urls.append(vs.create_url(route))
-        
+
     return list_of_urls
 
 def main(companies_to_remove=[], visualise=False):
@@ -204,13 +204,13 @@ def main(companies_to_remove=[], visualise=False):
             0,  # null capacity slack
             data['vehicle_capacities'],  # vehicle maximum capacities
             True,  # start cumul to zero
-            'Capacity') 
+            'Capacity')
 
     # Setting first solution heuristic.
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
         routing_enums_pb2.FirstSolutionStrategy.PATH_MOST_CONSTRAINED_ARC)
-    
+
 
     # Solve the problem.
     assignment = routing.SolveWithParameters(search_parameters)
@@ -229,5 +229,7 @@ def main(companies_to_remove=[], visualise=False):
     if visualise == True:
         open_maps(filename, list_of_routes)
 
+
+
 if __name__ == '__main__':
-    main(visualise=True)
+    main()
