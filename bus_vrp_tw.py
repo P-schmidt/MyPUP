@@ -108,7 +108,7 @@ def open_maps(filename, list_of_routes):
         
     return list_of_urls
 
-def main(visualise=False):
+def main(companies_to_remove=[], visualise=False):
     """Solve the CVRP problem."""
     filename = 'data/Mypup_bus'
 
@@ -118,7 +118,6 @@ def main(visualise=False):
     company_list = df['Company'].values.tolist()
 
     # this is the list of companies that have no packages to be delivered
-    companies_to_remove = ['Newday Offices Almere']
 
     # removes the companies to be skipped from the company_list
     [company_list.remove(company) for company in companies_to_remove]

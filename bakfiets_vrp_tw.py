@@ -101,7 +101,7 @@ def open_maps(filename, list_of_routes):
         
     return list_of_urls
 
-def main(visualise):
+def main(companies_to_remove, visualise=False):
     """Solve the CVRP problem."""
     filename = 'data/Mypup_bakfiets'
 
@@ -114,7 +114,7 @@ def main(visualise):
     #companies_to_remove = ['UVA BH / OIH', 'UVA UB Singel 425', 'Spakler', 'Nationale Nederlanden Amsterdam', 'Infinity']
 
     # removes the companies to be skipped from the company_list
-    #[company_list.remove(company) for company in companies_to_remove]
+    [company_list.remove(company) for company in companies_to_remove]
 
     # Instantiate the data problem.
     data = create_database(filename, company_list)
@@ -219,4 +219,4 @@ def main(visualise):
         open_maps(filename, list_of_routes)
 
 if __name__ == '__main__':
-    main(visualise=False)
+    main(visualise=True)

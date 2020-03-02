@@ -152,11 +152,11 @@ def remove_from_database(rem_loc, filename):
     with open(filename+'.pkl', 'wb') as f:
         pickle.dump(database, f)
 
-def database_overview(filename):
+def database_list(filename):
     with open(filename+'.pkl', 'rb') as f:
         database = pickle.load(f)
-    for comp in database.keys():
-        print(comp)
+    locations_list = [loc for loc in database.keys()]
+    return locations_list
 
 def distance(filename, source, dest):
     with open(filename+'.pkl', 'rb') as f:
