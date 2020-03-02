@@ -11,7 +11,7 @@ def create_url(list_of_addresses):
         address = address.replace(',', '')
         address = address.replace(' ', '+')
         clean_addresses.append(address)
-    
+
     url = "https://www.google.com/maps/dir/"
     extra_url = "https://www.google.com/maps/dir/"
     for i, address in enumerate(clean_addresses):
