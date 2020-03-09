@@ -6,6 +6,7 @@ import database as database
 import pandas as pd
 import pickle
 import copy
+import itertools
 
 
 def create_list_of_routes(data, manager, routing, assignment, company_list):
@@ -36,7 +37,7 @@ def create_list_of_routes(data, manager, routing, assignment, company_list):
 
     return list_of_routes, total_time-total_load
 
-def vrp_script(data, company_list):
+def vrp_script(data, company_list, print=False):
     # Create the routing index manager.
     manager = pywrapcp.RoutingIndexManager(len(data['distance_matrix']),
                                            data['num_vehicles'], data['depot'])
@@ -121,13 +122,14 @@ def vrp_script(data, company_list):
         routing_enums_pb2.FirstSolutionStrategy.PATH_MOST_CONSTRAINED_ARC)
 
     # sets the time limit in seconds
-    search_parameters.time_limit.seconds = 5
+    search_parameters.time_limit.seconds = 20
 
     # Solve the problem.
     assignment = routing.SolveWithParameters(search_parameters)
 
     if assignment:
-        #things = vrp.print_solution(data, manager, routing, assignment, company_list)
+        if print == True:
+            _ = vrp.print_solution(data, manager, routing, assignment, company_list)
         list_of_routes, time = create_list_of_routes(data, manager, routing, assignment, company_list)
         return list_of_routes, time
 
@@ -161,9 +163,9 @@ def print_initial_solution(data, company_list):
     return round(total_distance/60)
 
 
-def main(visualise = True, init_compare = True):
+def main(visualise = False, init_compare = True):
     correct = 0
-    capacities = [150, 200, 200, 200, 200]
+    capacities = [200, 200, 200, 150, 200]
 
     filename = 'data/Mypup_bus'
 
@@ -177,8 +179,7 @@ def main(visualise = True, init_compare = True):
 
     # this is the list of companies that have no packages to be delivered
     companies_to_remove = ['HUT Beursstraat', 'HUT Warmoesstraat', 'HVA DMH', 'HVA FMB',
-                            'HVA NTH', 'Nieuw Amsterdam', 'Spicalaan Hoofddorp',
-                            'UVA SP904', 'Ymere']
+                            'HVA NTH']
 
     # removes the companies to be skipped from the company_list
     [company_list.remove(company) for company in companies_to_remove]
@@ -198,26 +199,68 @@ def main(visualise = True, init_compare = True):
         # if visualise == True:
         #     vrp.open_maps(filename, initial_names)
 
+    perfect_time = total_initial_time
 
-    while True:
-        routes, total_optimized_time = vrp_script(data, company_list)
-        if routes == 0:
-            print("added dummy vehicle")
-            capacities.append(50)
-            # print(f"new capcities = {capacities} \n")
-            data = vrp.create_database(filename, company_list, capacities)
-        else:
-            break
+    six_time = total_initial_time
+    six_routes = []
+    six_capacity = []
 
-    print(f"The optimized driving time is {total_optimized_time}")
+    capacity_object = itertools.permutations(capacities)
+    capacity_list = list(set(capacity_object))
+
+    options = [list(cap) for cap in capacity_list]
+
+    for option in options:
+        print(f"\noption = {option}")
+        data = vrp.create_database(filename, company_list, option)
+        while True:
+            routes, total_optimized_time = vrp_script(data, company_list)
+            if routes == 0:
+                print("added dummy vehicle")
+                option.append(200)
+                data = vrp.create_database(filename, company_list, option)
+            else:
+                break
+        # get rid of routes that contain no companies
+        routes = [route for route in routes if route != ['Mypup', 'Mypup']]
+        print(f"else time {total_optimized_time} routes {len(routes)}")
+        # if optimized time is shortest found and uses 5 vehicles, save it
+        if total_optimized_time <= perfect_time and len(routes) < 6:
+            perfect_time = total_optimized_time
+            perfect_routes = routes
+            perfect_capacities = option
+            print(f"perfect_time = {perfect_time}, capacities = {perfect_capacities}")
+        # else save the shortest route using 6 vehicles
+        elif total_optimized_time < six_time and len(routes) == 6:
+            six_time = total_optimized_time
+            six_routes = routes
+            six_capacity = option
+            print(f"six_time = {six_time}, capacities = {six_capacity}")
+
+
+    if perfect_time != total_initial_time:
+        print("Perfect time = ", perfect_time)
+        print("Perfect routes = ", perfect_routes)
+        print("Perfect capacity = ", perfect_capacities, "\n")
+    else:
+        print("Six time = ", six_time)
+        print("Six routes = ", six_routes)
+        print("Six capacity = ", six_capacity)
+
+    resulting_time = perfect_time if perfect_routes else six_time
+    resulting_routes = perfect_routes if perfect_routes else six_routes
+    resulting_capacities = perfect_capacities if perfect_routes else six_capacity
+
+    print(f"The optimized driving time is {resulting_time}")
 
     if init_compare == True:
-        print(f"The difference between init and optimized = {total_initial_time-total_optimized_time}\n")
+        print(f"The difference between init and optimized = {total_initial_time-resulting_time}\n")
 
     # get rid of routes that contain no companies
-    routes = [route for route in routes if route != ['Mypup', 'Mypup']]
+    routes = [route for route in resulting_routes if route != ['Mypup', 'Mypup']]
 
     print(f"Number of vehicles used in optimized solution: {len(routes)}")
+
 
     # visualises the routes if set to true
     if visualise == True:

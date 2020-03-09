@@ -11,7 +11,7 @@ import random
 import pickle
 
 
-def create_database(filename, company_list, capacities=[200, 150, 150, 150, 200, 200, 200], create=False):
+def create_database(filename, company_list, capacities=[150, 150, 200, 150, 200], create=False):
 
     # call this function if you want to create a new pickle with distances
     if create == True:
@@ -21,7 +21,7 @@ def create_database(filename, company_list, capacities=[200, 150, 150, 150, 200,
     #db.add_to_database(['Infinity', 'Amstelveenseweg 500, 1081 KL Amsterdam NL', 5], 'Mypup_bakfiets')
 
     # this function can be used to update a column in the pkl
-    db.update_database('Timewindow', filename)
+    #db.update_database('Timewindow', filename)
 
     with open(filename+'.pkl', 'rb') as f:
         database_pickle = pickle.load(f)
@@ -80,10 +80,10 @@ def print_solution(data, manager, routing, assignment, company_list):
         companies_on_route.append(company_list[manager.IndexToNode(index)])
         plan_output += 'Time of the route: {}min\n'.format(
             round(assignment.Min(time_var)/60))
-        plan_output += 'Loading time/capacity of the route: {} minutes\n'.format(route_load)
+        plan_output += 'Loading time/capacity of the route: {} minutes'.format(route_load)
         list_of_routes.append(companies_on_route)
         print(plan_output)
-        print('Total travelling time of route: {}'.format(round(assignment.Min(time_var)/60)-route_load))
+        print('Total travelling time of route: {}\n'.format(round(assignment.Min(time_var)/60)-route_load))
         total_load += route_load
         total_time += assignment.Min(time_var)
     print('Total travelling of all routes: {} min'.format(round(total_time/60)-total_load))
@@ -113,7 +113,7 @@ def open_maps(filename, list_of_routes):
 
     return list_of_urls
 
-def main(companies_to_remove=[], visualise=True):
+def main(companies_to_remove=[], visualise=False):
     """Solve the CVRP problem."""
     filename = 'data/Mypup_bus'
 
@@ -124,7 +124,7 @@ def main(companies_to_remove=[], visualise=True):
 
     # this is the list of companies that have no packages to be delivered
     companies_to_remove = ['HUT Beursstraat', 'HUT Warmoesstraat', 'HVA DMH', 'HVA FMB',
-                            'HVA NTH', 'Ijland', 'Nieuw Amsterdam', 'Spicalaan Hoofddorp',
+                            'HVA NTH', 'Nieuw Amsterdam', 'Spicalaan Hoofddorp',
                             'UVA SP904', 'Ymere']
 
     # removes the companies to be skipped from the company_list
