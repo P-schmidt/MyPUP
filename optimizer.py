@@ -30,9 +30,9 @@ def create_list_of_routes(data, manager, routing, assignment, company_list):
         total_load += route_load
         total_time += assignment.Min(time_var)
     total_time = round(total_time/60)
-    print(f"total load = {total_load}")
-    print(f"total time = {total_time}")
-    print(f"total travel time = {total_time-total_load}")
+    # print(f"total load = {total_load}")
+    # print(f"total time = {total_time}")
+    # print(f"total travel time = {total_time-total_load}")
 
     return list_of_routes, total_time-total_load
 
@@ -151,17 +151,17 @@ def print_initial_solution(data, company_list):
                 loadtime += data['demands'][source]
             whole_route += f'-> {company_list[data[initial_routes][vehicle_id][0]]}'
             distance += data['distance_matrix'][data[initial_routes][vehicle_id][len(data['initial_routes'][vehicle_id])-1]][len(data['initial_routes'][vehicle_id])]
-            print(whole_route)
-            print(f'total time driven is {round(distance/60)}')
-            print(f'total loadtime is {loadtime}\n')
+            # print(whole_route)
+            # print(f'total time driven is {round(distance/60)}')
+            # print(f'total loadtime is {loadtime}\n')
             total_distance += distance
         else:
-            print(f'Vehicle {vehicle_id} is not used in this solution\n')
-    print(f'The total time driven is {round(total_distance/60)}\n')
-    return total_distance
+            print(f'Vehicle {vehicle_id} is not used in this solution')
+    print(f'The initial total drive time is {round(total_distance/60)}')
+    return round(total_distance/60)
 
 
-def main(visualise = False, init_compare = True):
+def main(visualise = True, init_compare = True):
     correct = 0
     capacities = [150, 200, 200, 200, 200]
 
@@ -177,13 +177,11 @@ def main(visualise = False, init_compare = True):
 
     # this is the list of companies that have no packages to be delivered
     companies_to_remove = ['HUT Beursstraat', 'HUT Warmoesstraat', 'HVA DMH', 'HVA FMB',
-                            'HVA NTH', 'Ijland', 'Nieuw Amsterdam', 'Spicalaan Hoofddorp',
+                            'HVA NTH', 'Nieuw Amsterdam', 'Spicalaan Hoofddorp',
                             'UVA SP904', 'Ymere']
 
     # removes the companies to be skipped from the company_list
     [company_list.remove(company) for company in companies_to_remove]
-
-    print(f'companies to be driven = {len(company_list)}\n')
 
     # Instantiate the data problem.
     data = vrp.create_database(filename, company_list, capacities)
@@ -195,35 +193,35 @@ def main(visualise = False, init_compare = True):
         for route in data2['initial_routes']:
             names = [initial_company_list[index] for index in route]
             initial_names.append(names)
-        #if wanted visualise the orgiginal routes
-        if visualise == True:
-            vrp.open_maps(filename, initial_names)
+        total_initial_time = print_initial_solution(data2, initial_company_list)
+        # if wanted visualise the original routes
+        # if visualise == True:
+        #     vrp.open_maps(filename, initial_names)
 
 
     while True:
         routes, total_optimized_time = vrp_script(data, company_list)
         if routes == 0:
+            print("added dummy vehicle")
             capacities.append(50)
             # print(f"new capcities = {capacities} \n")
             data = vrp.create_database(filename, company_list, capacities)
         else:
             break
 
-    print(f"optimized time = {total_optimized_time}\n")
+    print(f"The optimized driving time is {total_optimized_time}")
 
     if init_compare == True:
-        print(f"difference = {total_initial_distance-total_optimized_time}\n")
+        print(f"The difference between init and optimized = {total_initial_time-total_optimized_time}\n")
 
-    for route in routes:
-        if route != ['Mypup', 'Mypup']:
-            print(route, "\n")
+    # get rid of routes that contain no companies
+    routes = [route for route in routes if route != ['Mypup', 'Mypup']]
 
-    used_routes = [route for route in routes if route != ['Mypup', 'Mypup']]
+    print(f"Number of vehicles used in optimized solution: {len(routes)}")
 
-    # print("Amount of vehicles used: ", len(used_routes))
-
+    # visualises the routes if set to true
     if visualise == True:
-        vrp.open_maps(filename, used_routes)
+        vrp.open_maps(filename, routes)
 
 
 

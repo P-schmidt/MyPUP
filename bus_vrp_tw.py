@@ -40,24 +40,17 @@ def create_database(filename, company_list, capacities=[200, 150, 150, 150, 200,
     data = {}
     data['distance_matrix'] = db.create_distance_matrix(filename, company_list)
     data['demands'] = daily_company_loadtimes
-    print('Total demands = ', sum(data['demands']))
     data['vehicle_capacities'] = capacities
-    print('Total capacity = ', sum(data['vehicle_capacities']))
     data['num_vehicles'] = len(data['vehicle_capacities'])
     data['depot'] = 0
     data['time_windows'] = daily_company_timewindows
     data['initial_routes'] = [
          [0, 2, 18, 33, 26, 1, 49, 34, 5, 6, 0],
          [0, 14, 36, 38, 39, 37, 8, 30, 10, 12, 9, 0],
-         [0, 13, 42, 43, 44, 11, 0],
+         [0, 13, 43, 42, 44, 11, 0],
          [0, 17, 50, 29, 27, 47, 35, 3, 24, 7, 15, 0],
          [0, 31, 28, 16, 4, 46, 41, 0]
               ]
-    amount = 0
-    for route in data['initial_routes']:
-        amount += len(route)
-    print(f"initial amount of companies = {amount-9}")
-
     return data
 
 def print_solution(data, manager, routing, assignment, company_list):
