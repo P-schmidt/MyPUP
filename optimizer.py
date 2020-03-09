@@ -165,7 +165,7 @@ def print_initial_solution(data, company_list):
 
 def main(visualise = False, init_compare = True):
     correct = 0
-    capacities = [200, 200, 200, 150, 200]
+    capacities = [200, 200, 200, 200, 200]
 
     filename = 'data/Mypup_bus'
 
@@ -179,7 +179,7 @@ def main(visualise = False, init_compare = True):
 
     # this is the list of companies that have no packages to be delivered
     companies_to_remove = ['HUT Beursstraat', 'HUT Warmoesstraat', 'HVA DMH', 'HVA FMB',
-                            'HVA NTH']
+                            'HVA NTH', 'Spicalaan Hoofddorp']
 
     # removes the companies to be skipped from the company_list
     [company_list.remove(company) for company in companies_to_remove]
@@ -212,13 +212,15 @@ def main(visualise = False, init_compare = True):
 
     for option in options:
         print(f"\noption = {option}")
-        data = vrp.create_database(filename, company_list, option)
+        data['vehicle_capacities'] = option
+        data['num_vehicles'] = len(option)
         while True:
             routes, total_optimized_time = vrp_script(data, company_list)
             if routes == 0:
                 print("added dummy vehicle")
                 option.append(200)
-                data = vrp.create_database(filename, company_list, option)
+                data['vehicle_capacities'] = option
+                data['num_vehicles'] = len(option)
             else:
                 break
         # get rid of routes that contain no companies
@@ -247,9 +249,9 @@ def main(visualise = False, init_compare = True):
         print("Six routes = ", six_routes)
         print("Six capacity = ", six_capacity)
 
-    resulting_time = perfect_time if perfect_routes else six_time
-    resulting_routes = perfect_routes if perfect_routes else six_routes
-    resulting_capacities = perfect_capacities if perfect_routes else six_capacity
+    resulting_time = perfect_time if perfect_time != total_initial_time else six_time
+    resulting_routes = perfect_routes if perfect_time != total_initial_time else six_routes
+    resulting_capacities = perfect_capacities if perfect_time != total_initial_time else six_capacity
 
     print(f"The optimized driving time is {resulting_time}")
 
