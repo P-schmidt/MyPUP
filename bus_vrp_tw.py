@@ -46,6 +46,17 @@ def create_database(filename, company_list, capacities=[200, 150, 150, 150, 200,
     data['num_vehicles'] = len(data['vehicle_capacities'])
     data['depot'] = 0
     data['time_windows'] = daily_company_timewindows
+    data['initial_routes'] = [
+         [0, 2, 18, 33, 26, 1, 49, 34, 5, 6, 0],
+         [0, 14, 36, 38, 39, 37, 8, 30, 10, 12, 9, 0],
+         [0, 13, 42, 43, 44, 11, 0],
+         [0, 17, 50, 29, 27, 47, 35, 3, 24, 7, 15, 0],
+         [0, 31, 28, 16, 4, 46, 41, 0]
+              ]
+    amount = 0
+    for route in data['initial_routes']:
+        amount += len(route)
+    print(f"initial amount of companies = {amount-9}")
 
     return data
 
@@ -79,11 +90,11 @@ def print_solution(data, manager, routing, assignment, company_list):
         plan_output += 'Loading time/capacity of the route: {} minutes\n'.format(route_load)
         list_of_routes.append(companies_on_route)
         print(plan_output)
-        print('Total travelling time of route: {}\n'.format(round(assignment.Min(time_var)/60)-route_load))
+        print('Total travelling time of route: {}'.format(round(assignment.Min(time_var)/60)-route_load))
         total_load += route_load
         total_time += assignment.Min(time_var)
-    print('Total time of all routes: {}min'.format(round(total_time/60)))
-    print('Total loading time of all routes: {}'.format(total_load))
+    print('Total travelling of all routes: {} min'.format(round(total_time/60)-total_load))
+    print('Total loading time of all routes: {} min'.format(total_load))
 
     return list_of_routes
 
@@ -93,12 +104,13 @@ def open_maps(filename, list_of_routes):
 
     list_of_addresses = []
     for route in list_of_routes:
-        addresses_of_route = []
-        for i, company in enumerate(route):
-            source = database_pickle[company]['Address']
-            #destination = database_pickle[route[i+1]]['Address']
-            addresses_of_route.append(source)
-        list_of_addresses.append(addresses_of_route)
+        if route != ['Mypup', 'Mypup']:
+            addresses_of_route = []
+            for i, company in enumerate(route):
+                source = database_pickle[company]['Address']
+                #destination = database_pickle[route[i+1]]['Address']
+                addresses_of_route.append(source)
+            list_of_addresses.append(addresses_of_route)
 
 
     # creates a list of urls for every route, url is a link to google maps with the route
@@ -108,7 +120,7 @@ def open_maps(filename, list_of_routes):
 
     return list_of_urls
 
-def main(companies_to_remove=[], visualise=False):
+def main(companies_to_remove=[], visualise=True):
     """Solve the CVRP problem."""
     filename = 'data/Mypup_bus'
 
@@ -118,6 +130,9 @@ def main(companies_to_remove=[], visualise=False):
     company_list = df['Company'].values.tolist()
 
     # this is the list of companies that have no packages to be delivered
+    companies_to_remove = ['HUT Beursstraat', 'HUT Warmoesstraat', 'HVA DMH', 'HVA FMB',
+                            'HVA NTH', 'Ijland', 'Nieuw Amsterdam', 'Spicalaan Hoofddorp',
+                            'UVA SP904', 'Ymere']
 
     # removes the companies to be skipped from the company_list
     [company_list.remove(company) for company in companies_to_remove]

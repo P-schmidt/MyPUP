@@ -31,17 +31,17 @@ def create_database(filename, company_list, create=True):
     data = {}   
     data['distance_matrix'] = db.create_distance_matrix(filename, company_list)
     data['demands'] = daily_company_loadtimes
-    data['vehicle_capacities'] = [200, 200, 160, 120, 120,]
+    data['vehicle_capacities'] = [150, 200, 200, 200, 200]
     data['num_vehicles'] = len(data['vehicle_capacities'])
     data['depot'] = 0
     data['initial_routes'] = [  
-         [0, 20, 57, 76, 43, 41, 73, 51, 3, 32, 7, 16, 0],
-         [0, 46, 5, 6, 75, 50, 28, 30, 1, 38, 47, 48, 49, 0],
-         [0, 33, 34, 35, 36, 69, 58, 19, 60, 42, 17, 59, 71, 72, 2, 0],
-         [0, 27, 15, 53, 54, 55, 52, 9, 45, 11, 13, 10, 0],
-         [0, 14, 25, 26, 62, 61, 63, 12, 74, 0]
+         [0, 2, 18, 33, 26, 1, 49, 34, 5, 6, 0],
+         [0, 14, 36, 38, 39, 37, 8, 30, 10, 12, 9, 0],
+         [0, 13, 42, 43, 44, 11, 0],
+         [0, 17, 50, 29, 27, 47, 35, 3, 24, 7, 15, 0],
+         [0, 31, 28, 16, 4, 46, 41, 0]
               ]
- 
+
     return data
  
 # prints the solution that was calculated by algorithm
@@ -86,7 +86,7 @@ def print_initial_solution(data, company_list):
     total_loadtime = 0
     for vehicle_id in range(data['num_vehicles']):
         if data[initial_routes][vehicle_id] != []:
-            whole_route = f"Route for vehicle {vehicle_id} start at {company_list[data[initial_routes][vehicle_id][0]]} -> "
+            whole_route = f"Route for vehicle {vehicle_id} start at "
             distance = 0
             loadtime = 0
             for i in range(0, len(data['initial_routes'][vehicle_id])-1):
@@ -140,7 +140,7 @@ def main():
     #print(company_list)
  
     # this is the list of companies that have no packages to be delivered
-    companies_to_remove = ['Newday Offices Almere']
+    companies_to_remove = []
  
     # removes the companies to be skipped from the company_list
     [company_list.remove(company) for company in companies_to_remove]
@@ -187,7 +187,7 @@ def main():
         True,  # start cumul to zero
         'Capacity')
  
-    #total_initial_distance = print_initial_solution(data, company_list)
+    total_initial_distance = print_initial_solution(data, company_list)
  
     # print the total capacity required and the total capacity available
     print(f'{sum(data["demands"])} is total loading time of all the locations')
@@ -197,6 +197,8 @@ def main():
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
         routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+
+    search_parameters.time_limit.seconds = 10
  
     # Solve the problem.
     assignment = routing.SolveWithParameters(search_parameters)
@@ -205,7 +207,7 @@ def main():
     if assignment:
         total_optimized_distance, list_of_routes = print_solution(data, manager, routing, assignment, company_list)
  
-    #print(f'The overall travelling time that is saved is {round((total_initial_distance-total_optimized_distance)/60)} minutes')
+    print(f'The overall travelling time that is saved is {round((total_initial_distance-total_optimized_distance)/60)} minutes')
  
     #this prints the routes as a list of lists with adresses
     #print(visualise(filename, list_of_routes))

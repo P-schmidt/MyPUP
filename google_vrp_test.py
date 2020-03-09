@@ -93,12 +93,12 @@ def open_maps(filename, list_of_routes):
             addresses_of_route.append(source)
         list_of_addresses.append(addresses_of_route)
 
-    
+
     # creates a list of urls for every route, url is a link to google maps with the route
     list_of_urls = []
     for route in list_of_addresses:
         list_of_urls.append(vs.create_url(route))
-        
+
     return list_of_urls
 
 def main(visualise=False):
@@ -194,13 +194,13 @@ def main(visualise=False):
             0,  # null capacity slack
             data['vehicle_capacities'],  # vehicle maximum capacities
             True,  # start cumul to zero
-            'Capacity') 
+            'Capacity')
 
     # Setting first solution heuristic.
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
         routing_enums_pb2.FirstSolutionStrategy.PATH_MOST_CONSTRAINED_ARC)
-    
+
 
     # Solve the problem.
     assignment = routing.SolveWithParameters(search_parameters)

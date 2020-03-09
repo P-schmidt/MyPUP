@@ -14,6 +14,8 @@ def create_url(list_of_addresses):
 
     url = "https://www.google.com/maps/dir/"
     extra_url = "https://www.google.com/maps/dir/"
+
+    # loop through addresses
     for i, address in enumerate(clean_addresses):
         if i < 10:
             url += address+'/'
