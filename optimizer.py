@@ -217,49 +217,53 @@ def main(visualise = False, init_compare = True):
         while True:
             routes, total_optimized_time = vrp_script(data, company_list)
             if routes == 0:
-                print("added dummy vehicle")
                 option.append(200)
+                print("added capacity total is now ", sum(option))
                 data['vehicle_capacities'] = option
                 data['num_vehicles'] = len(option)
             else:
                 break
         # get rid of routes that contain no companies
         routes = [route for route in routes if route != ['Mypup', 'Mypup']]
-        print(f"else time {total_optimized_time} routes {len(routes)}")
-        # if optimized time is shortest found and uses 5 vehicles, save it
-        if total_optimized_time <= perfect_time and len(routes) < 6:
-            perfect_time = total_optimized_time
-            perfect_routes = routes
-            perfect_capacities = option
-            print(f"perfect_time = {perfect_time}, capacities = {perfect_capacities}")
-        # else save the shortest route using 6 vehicles
-        elif total_optimized_time < six_time and len(routes) == 6:
-            six_time = total_optimized_time
-            six_routes = routes
-            six_capacity = option
-            print(f"six_time = {six_time}, capacities = {six_capacity}")
+
+    print(option)
+    print('num of vehicles: ', len(routes))
+    print(routes)
+    #     print(f"else time {total_optimized_time} routes {len(routes)}")
+    #     # if optimized time is shortest found and uses 5 vehicles, save it
+    #     if total_optimized_time <= perfect_time and len(routes) < 6:
+    #         perfect_time = total_optimized_time
+    #         perfect_routes = routes
+    #         perfect_capacities = option
+    #         print(f"perfect_time = {perfect_time}, capacities = {perfect_capacities}")
+    #     # else save the shortest route using 6 vehicles
+    #     elif total_optimized_time < six_time and len(routes) == 6:
+    #         six_time = total_optimized_time
+    #         six_routes = routes
+    #         six_capacity = option
+    #         print(f"six_time = {six_time}, capacities = {six_capacity}")
 
 
-    if perfect_time != total_initial_time:
-        print("Perfect time = ", perfect_time)
-        print("Perfect routes = ", perfect_routes)
-        print("Perfect capacity = ", perfect_capacities, "\n")
-    else:
-        print("Six time = ", six_time)
-        print("Six routes = ", six_routes)
-        print("Six capacity = ", six_capacity)
+    # if perfect_time != total_initial_time:
+    #     print("Perfect time = ", perfect_time)
+    #     print("Perfect routes = ", perfect_routes)
+    #     print("Perfect capacity = ", perfect_capacities, "\n")
+    # else:
+    #     print("Six time = ", six_time)
+    #     print("Six routes = ", six_routes)
+    #     print("Six capacity = ", six_capacity)
 
-    resulting_time = perfect_time if perfect_time != total_initial_time else six_time
-    resulting_routes = perfect_routes if perfect_time != total_initial_time else six_routes
-    resulting_capacities = perfect_capacities if perfect_time != total_initial_time else six_capacity
+    # resulting_time = perfect_time if perfect_time != total_initial_time else six_time
+    # resulting_routes = perfect_routes if perfect_time != total_initial_time else six_routes
+    # resulting_capacities = perfect_capacities if perfect_time != total_initial_time else six_capacity
 
-    print(f"The optimized driving time is {resulting_time}")
+    print(f"The optimized driving time is {total_optimized_time}")
 
     if init_compare == True:
-        print(f"The difference between init and optimized = {total_initial_time-resulting_time}\n")
+        print(f"The difference between init and optimized = {total_initial_time-total_optimized_time}\n")
 
     # get rid of routes that contain no companies
-    routes = [route for route in resulting_routes if route != ['Mypup', 'Mypup']]
+    # routes = [route for route in resulting_routes if route != ['Mypup', 'Mypup']]
 
     print(f"Number of vehicles used in optimized solution: {len(routes)}")
 

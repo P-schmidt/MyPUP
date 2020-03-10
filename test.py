@@ -34,7 +34,7 @@ def create_database(filename, company_list, create=True):
     data['vehicle_capacities'] = [150, 200, 200, 200, 200]
     data['num_vehicles'] = len(data['vehicle_capacities'])
     data['depot'] = 0
-    data['initial_routes'] = [  
+    data['initial_routes'] = [
          [0, 2, 18, 33, 26, 1, 49, 34, 5, 6, 0],
          [0, 14, 36, 38, 39, 37, 8, 30, 10, 12, 9, 0],
          [0, 13, 42, 43, 44, 11, 0],
@@ -211,6 +211,6 @@ def main():
  
     #this prints the routes as a list of lists with adresses
     #print(visualise(filename, list_of_routes))
- 
+
 if __name__ == '__main__':
     main()

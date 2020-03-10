@@ -12,7 +12,7 @@ def get_info(filename):
     df = pd.read_csv(filename+'.csv')
     df['Address'].replace(u'\xa0',u' ', regex=True, inplace=True)
     df['Company'].replace(u'\xa0',u'', regex=True, inplace=True)
-    return df[['Company', 'Address', 'Loadtimes', 'Timewindow']].values.tolist()
+    return df[['Company', 'Address', 'Loadtimes', 'Demands', 'Timewindow']].values.tolist()
 
 # returns the distance and duration between source and destination using Google Maps Distance Matrix API
 # Gets the duration or distance between start and end, optional driving mode or cycling
@@ -40,7 +40,7 @@ def get_distance(start_address, end_address, duration=True, driving=True):
     # Get method of requests module 
     # return response object 
     r = requests.get(url+'units='+units+'&mode='+mode+'&origins='+source+'&destinations='+dest+'&key='+api_key)
-                        
+
     # json method of response object 
     # return json format result 
     x = r.json() 
@@ -55,17 +55,18 @@ def initial_database(filename):
     """Creates a permanent nested dictionary with travel times or distances for each pair of locations in customer base.
         params:
             filename:  filename indicates what customer base should be retrieved from database. """
-    
-    addresses = get_info(filename)
-    database = {}
 
+    addresses = get_info(filename)
+
+    database = {}
 
     for source in addresses:
         # add metadata for location
         database[source[0]] = {}
         database[source[0]]['Address'] = source[1]
         database[source[0]]['Loadtime'] = source[2]
-        database[source[0]]['Timewindow'] = source[3]
+        database[source[0]]['Demands'] = source[3]
+        database[source[0]]['Timewindow'] = source[4]
 
 
         # calculate distances to all other locations 
@@ -101,9 +102,9 @@ def add_to_database(new_loc, filename):
         pickle.dump(database, f)
 
 def update_database(column, filename):
-    """Adds new locations to the database.
+    """Updates a column in the database according to the specified file.
         params:
-            new_locs: a list of lists consisting of the company name, address and load time.
+            column: The column that should be retrieved and updated in the pickle.
             filename:  filename indicates what customer base should be retrieved from database. """
 
     updated_data = get_info(filename)
@@ -114,17 +115,22 @@ def update_database(column, filename):
         index = 1
     elif column == 'Loadtime':
         index = 2
-    elif column == 'Timewindow':
+    elif column == 'Demands':
         index = 3
+    elif column == 'Timewindow':
+        index = 4
     else:
         print('update_database terminated because column:', column, 'does not exist')
         exit()
-    
-    # open database  
+
+    # open database
     with open(filename+'.pkl', 'rb') as f:
         database = pickle.load(f)
 
-    # loop through all locations and update the relevant
+    print(updated_data)
+
+
+    # loop through all locations and update the relevant column
     for location in updated_data:
         database[location[0]][column] = location[index]
 

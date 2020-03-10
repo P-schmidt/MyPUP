@@ -11,7 +11,7 @@ import random
 import pickle
 
 
-def create_database(filename, company_list, capacities=[150, 150, 200, 150, 200], create=False):
+def create_database(filename, company_list, capacities=[200, 200, 200, 200, 200], create=False):
 
     # call this function if you want to create a new pickle with distances
     if create == True:
@@ -21,7 +21,7 @@ def create_database(filename, company_list, capacities=[150, 150, 200, 150, 200]
     #db.add_to_database(['Infinity', 'Amstelveenseweg 500, 1081 KL Amsterdam NL', 5], 'Mypup_bakfiets')
 
     # this function can be used to update a column in the pkl
-    #db.update_database('Timewindow', filename)
+    # db.update_database('Demands', filename)
 
     with open(filename+'.pkl', 'rb') as f:
         database_pickle = pickle.load(f)
@@ -36,10 +36,17 @@ def create_database(filename, company_list, capacities=[150, 150, 200, 150, 200]
     for company in company_list:
         daily_company_timewindows.append(literal_eval(database_pickle[company]['Timewindow']))
 
+    daily_company_demands = []
+    # get the demands for the companies and append them in order to list
+    for company in company_list:
+        daily_company_demands.append(database_pickle[company]['Demands'])
+
     # initialize the data as a dict and add keys with their values
     data = {}
     data['distance_matrix'] = db.create_distance_matrix(filename, company_list)
-    data['demands'] = daily_company_loadtimes
+    data['loadtimes'] = daily_company_loadtimes
+    data['demands'] = daily_company_demands
+    print('Total demands = ', sum(data['demands']))
     data['vehicle_capacities'] = capacities
     data['num_vehicles'] = len(data['vehicle_capacities'])
     data['depot'] = 0
@@ -115,7 +122,7 @@ def open_maps(filename, list_of_routes):
 
 def main(companies_to_remove=[], visualise=False):
     """Solve the CVRP problem."""
-    filename = 'data/Mypup_bus'
+    filename = 'data/Mypup_bus_comp'
 
     # create a list with all the companies as daily_company_list tester
     df = pd.read_csv(filename+'.csv')
@@ -128,7 +135,7 @@ def main(companies_to_remove=[], visualise=False):
                             'UVA SP904', 'Ymere']
 
     # removes the companies to be skipped from the company_list
-    [company_list.remove(company) for company in companies_to_remove]
+    # [company_list.remove(company) for company in companies_to_remove]
 
 
     print('Total number of companies to be visited', len(company_list))
@@ -150,13 +157,14 @@ def main(companies_to_remove=[], visualise=False):
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
         # data['demands'] adds the loading time to the travel time
-        return (data['demands'][from_node]*60) + data['distance_matrix'][from_node][to_node]
+        return (data['loadtimes'][from_node]*60) + data['distance_matrix'][from_node][to_node]
 
     def demand_callback(from_index):
         """Returns the demand of the node."""
         # Convert from routing variable Index to demands NodeIndex.
+        # print('index = ', from_index)
         from_node = manager.IndexToNode(from_index)
-        return data['demands'][from_node]
+        return data['loadtimes'][from_node]
 
     demand_callback_index = routing.RegisterUnaryTransitCallback(
         demand_callback)
