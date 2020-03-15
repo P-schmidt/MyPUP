@@ -1,43 +1,14 @@
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
-from ast import literal_eval
-import bus_vrp_tw as vrp
-import database as database
+import visualizer as vs
+import database as db
+import printer as pt
 import pandas as pd
 import pickle
 import copy
-import itertools
+from random import randint
 
-
-def create_list_of_routes(data, manager, routing, assignment, company_list):
-    """Prints assignment on console."""
-    time_dimension = routing.GetDimensionOrDie('Time')
-    total_time = 0
-    total_load = 0
-    list_of_routes =[]
-    for vehicle_id in range(data['num_vehicles']):
-        index = routing.Start(vehicle_id)
-        route_load = 0
-        companies_on_route = []
-        while not routing.IsEnd(index):
-            node_index = manager.IndexToNode(index)
-            time_var = time_dimension.CumulVar(index)
-            route_load += data['loadtimes'][node_index]
-            companies_on_route.append(company_list[node_index])
-            index = assignment.Value(routing.NextVar(index))
-        time_var = time_dimension.CumulVar(index)
-        companies_on_route.append(company_list[manager.IndexToNode(index)])
-        list_of_routes.append(companies_on_route)
-        total_load += route_load
-        total_time += assignment.Min(time_var)
-    total_time = round(total_time/60)
-    # print(f"total load = {total_load}")
-    # print(f"total time = {total_time}")
-    # print(f"total travel time = {total_time-total_load}")
-
-    return list_of_routes, total_time-total_load
-
-def vrp_script(data, company_list, printer=True):
+def vrp_script(data, company_list, printer=False):
     # Create the routing index manager.
     manager = pywrapcp.RoutingIndexManager(len(data['distance_matrix']),
                                            data['num_vehicles'], data['depot'])
@@ -45,12 +16,12 @@ def vrp_script(data, company_list, printer=True):
     # Create Routing Model.
     routing = pywrapcp.RoutingModel(manager)
 
-
     def time_callback(from_index, to_index):
         """Returns the travel time between the two nodes."""
         # Convert from routing variable Index to time matrix NodeIndex.
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
+
         # data['demands'] adds the loading time to the travel time
         return (data['loadtimes'][from_node] * 60) + data['distance_matrix'][from_node][to_node]
 
@@ -69,7 +40,6 @@ def vrp_script(data, company_list, printer=True):
         True,  # start cumul to zero
         'Capacity')
 
-
     transit_callback_index = routing.RegisterTransitCallback(time_callback)
 
     # Define cost of each arc.
@@ -78,11 +48,12 @@ def vrp_script(data, company_list, printer=True):
     time = 'Time'
     routing.AddDimension(
         transit_callback_index,
-        1000,  # allow waiting time
-        14400,  # maximum time per vehicle
-        False,  # Don't force start cumul to zero.
+        500,  # allow waiting time
+        10000,  # maximum time per vehicle
+        True,  # Don't force start cumul to zero.
         time)
     time_dimension = routing.GetDimensionOrDie(time)
+   
     # Add time window constraints for each location except depot.
     for location_idx, time_window in enumerate(data['time_windows']):
         if location_idx == 0:
@@ -103,7 +74,8 @@ def vrp_script(data, company_list, printer=True):
     # Setting first solution heuristic.
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
-        routing_enums_pb2.FirstSolutionStrategy.PATH_MOST_CONSTRAINED_ARC)
+        routing_enums_pb2.FirstSolutionStrategy.AUTOMATIC)
+        #GEBRUIK NU PATH_MOST_CONSTRAINED_ARC
 
     # sets the time limit in seconds
     search_parameters.time_limit.seconds = 5
@@ -113,42 +85,15 @@ def vrp_script(data, company_list, printer=True):
 
     if assignment:
         if printer == True:
-            _ = vrp.print_solution(data, manager, routing, assignment, company_list)
-        list_of_routes, time = create_list_of_routes(data, manager, routing, assignment, company_list)
+            list_of_routes, time = pt.print_solution(data, manager, routing, assignment, company_list)
+        else:
+            list_of_routes, time = pt.create_list_of_routes(data, manager, routing, assignment, company_list)
         return list_of_routes, time
 
     return 0, 0
 
-# prints the initial solution
-def print_initial_solution(data, company_list):
-    initial_routes = 'initial_routes'
-    total_distance = 0
-    total_loadtime = 0
-    for vehicle_id in range(data['num_vehicles']):
-        if data[initial_routes][vehicle_id] != []:
-            whole_route = f"Route for vehicle {vehicle_id} start at "
-            distance = 0
-            loadtime = 0
-            for i in range(0, len(data['initial_routes'][vehicle_id])-1):
-                source = data[initial_routes][vehicle_id][i]
-                destination = data[initial_routes][vehicle_id][i+1]
-                whole_route += f'{company_list[data[initial_routes][vehicle_id][i]]} -> '
-                distance += data['distance_matrix'][source][destination]
-                loadtime += data['demands'][source]
-            whole_route += f'-> {company_list[data[initial_routes][vehicle_id][0]]}'
-            distance += data['distance_matrix'][data[initial_routes][vehicle_id][len(data['initial_routes'][vehicle_id])-1]][len(data['initial_routes'][vehicle_id])]
-            # print(whole_route)
-            # print(f'total time driven is {round(distance/60)}')
-            # print(f'total loadtime is {loadtime}\n')
-            total_distance += distance
-        else:
-            print(f'Vehicle {vehicle_id} is not used in this solution')
-    print(f'The initial total drive time is {round(total_distance/60)}')
-    return round(total_distance/60)
 
-
-def main(visualise = True, init_compare = True):
-    correct = 0
+def main(visualise = False, init_compare = True):
     capacities = [200, 200, 200, 200, 200]
 
     filename = 'data/Mypup_bus'
@@ -162,75 +107,93 @@ def main(visualise = True, init_compare = True):
     initial_company_list = copy.copy(company_list)
 
     # this is the list of companies that have no packages to be delivered
-    companies_to_remove = ['HUT Beursstraat', 'HUT Warmoesstraat', 'HVA DMH', 'HVA FMB',
-                            'HVA NTH', 'Spicalaan Hoofddorp']
+    companies_to_remove = ['Spicalaan Hoofddorp', 'HUT Beursstraat', 'HUT Warmoesstraat', 'HVA DMH', 'HVA FMB', 'HVA NTH']
+
+    # creates a list of index numbers for the companies that are removed.
+    index_numbers = []
+    for i in range(len(initial_company_list)):
+        if initial_company_list[i] in companies_to_remove:
+            index_numbers.append(i)
+    
+    
+    #create random numbers, and remove the companies belonging to those spots.
+    for _ in range(4):
+        number = randint(0, len(company_list)) - 1
+        if number != 0:
+            index_numbers.append(number)
+            companies_to_remove.append(company_list[number])
+	        # companies_to_remove.append(initial_company_list[number])
+        else:
+            pass
+
+    print(set(companies_to_remove))
+	
 
     # removes the companies to be skipped from the company_list
-    [company_list.remove(company) for company in companies_to_remove]
-
+    [company_list.remove(company) for company in set(companies_to_remove)]
+    
     # Instantiate the data problem.
-    data = vrp.create_database(filename, company_list, capacities)
+    data = db.create_database(filename, company_list, capacities)
 
     # if necessary create data for init routes
     if init_compare == True:
-        data2 = vrp.create_database(filename, initial_company_list, capacities)
-        initial_names = []
+        data2 = db.create_database(filename, initial_company_list, capacities)
+        new_init_routes = []
         for route in data2['initial_routes']:
-            names = [initial_company_list[index] for index in route]
-            initial_names.append(names)
-        total_initial_time = print_initial_solution(data2, initial_company_list)
-        # if wanted visualise the original routes
-        # if visualise == True:
-        #     vrp.open_maps(filename, initial_names)
+            new_route = [location for location in route if location not in set(index_numbers)]
+            new_init_routes.append(new_route)
+        
+        data2['initial_routes'] = new_init_routes
 
+        total_initial_time = pt.print_initial_solution(data2, initial_company_list)
 
     data['vehicle_capacities'] = capacities
     data['num_vehicles'] = len(capacities)
 
     loadfactor = 1
-    routes = 0
     vehicles_used = 6
 
-    while vehicles_used > 5 and routes is 0:
+    routes, total_optimized_time = vrp_script(data, company_list, printer=False)
+    if routes:
+        routes = [route for route in routes if route != ['Mypup', 'Mypup']]
+        vehicles_used = len(routes)
+    
+    while vehicles_used > 5 or routes is 0:
+        data['vehicle_capacities'].append(200)
+        data['num_vehicles'] = len(data['vehicle_capacities'])
         routes, total_optimized_time = vrp_script(data, company_list, printer=False)
-        if routes is 0:
-            data['vehicle_capacities'].append(200)
+
+        if routes is 0 or data['num_vehicles'] == 8:
+            print(data['num_vehicles'])
+            data['vehicle_capacities'] = [200, 200, 200, 200, 200]
             data['num_vehicles'] = len(data['vehicle_capacities'])
-            print('Data_num_vehicles = ', data['num_vehicles'])
-            if data['num_vehicles'] == 7:
-                data['vehicle_capacities'] = [200, 200, 200, 200, 200]
-                data['num_vehicles'] = len(data['vehicle_capacities'])
-                loadfactor -= 0.1
-                data['loadtimes'] = [loadtime * loadfactor for loadtime in data['loadtimes']]
-                print("loadfactor is now ", loadfactor)
-            print(f"Vehicles used {vehicles_used}")
+            loadfactor -= 0.1
+            data['loadtimes'] = [loadtime * loadfactor for loadtime in data['loadtimes']]
+            print(f'loadfactor: {loadfactor}')
         else:
-            print(f"aangekomen {vehicles_used}")
+            print(data['num_vehicles'])
+            print(f'else loadfactor: {loadfactor}')
             routes = [route for route in routes if route != ['Mypup', 'Mypup']]
             vehicles_used = len(routes)
-#             print(f"\n\n\nHier aangekomen; loadfactor is {loadfactor} \
-# vehicles used = {vehicles_used}")
 
     # used to print the routes with correct parameters
     routes, total_optimized_time = vrp_script(data, company_list, printer=True)
 
+    print(f"Resulting capacities: {data['vehicle_capacities']} and loadfactor: {loadfactor}")
+
     # get rid of routes that contain no mypup->mypup routes
     routes = [route for route in routes if route != ['Mypup', 'Mypup']]
 
-    print('num of vehicles: ', len(routes))
-    print(f"The optimized driving time is {total_optimized_time}")
+    print(f"The optimized driving time is {round(total_optimized_time)}")
 
     if init_compare == True:
-        print(f"The difference between init and optimized = {total_initial_time-total_optimized_time}\n")
+        print(f"The difference between init and optimized = {total_initial_time-total_optimized_time}")
 
-    # get rid of routes that contain no companies
-    # routes = [route for route in resulting_routes if route != ['Mypup', 'Mypup']]
-
-    print(f"Number of vehicles used in optimized solution: {len(routes)}")
+    print(f"Number of vehicles used in optimized solution: {len(routes)}\n")
 
     # visualises the routes if set to true
     if visualise == True:
-        vrp.open_maps(filename, routes)
+        vs.open_maps(filename, routes)
 
 
 

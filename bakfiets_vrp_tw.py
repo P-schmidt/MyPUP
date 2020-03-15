@@ -101,7 +101,7 @@ def open_maps(filename, list_of_routes):
         
     return list_of_urls
 
-def main(companies_to_remove, visualise=False):
+def main(companies_to_remove=[], visualise=False):
     """Solve the CVRP problem."""
     filename = 'data/Mypup_bakfiets'
 
@@ -181,20 +181,20 @@ def main(companies_to_remove, visualise=False):
             time_dimension.CumulVar(routing.End(i)))
 
     # sets the capacity constraint
-    def demand_callback(from_index):
-        """Returns the demand of the node."""
-        # Convert from routing variable Index to demands NodeIndex.
-        from_node = manager.IndexToNode(from_index)
-        return data['demands'][from_node]
+    # def demand_callback(from_index):
+    #     """Returns the demand of the node."""
+    #     # Convert from routing variable Index to demands NodeIndex.
+    #     from_node = manager.IndexToNode(from_index)
+    #     return data['demands'][from_node]
 
-        demand_callback_index = routing.RegisterUnaryTransitCallback(
-            demand_callback)
-        routing.AddDimensionWithVehicleCapacity(
-            demand_callback_index,
-            0,  # null capacity slack
-            data['vehicle_capacities'],  # vehicle maximum capacities
-            True,  # start cumul to zero
-            'Capacity') 
+    #     demand_callback_index = routing.RegisterUnaryTransitCallback(
+    #         demand_callback)
+    #     routing.AddDimensionWithVehicleCapacity(
+    #         demand_callback_index,
+    #         0,  # null capacity slack
+    #         data['vehicle_capacities'],  # vehicle maximum capacities
+    #         True,  # start cumul to zero
+    #         'Capacity') 
 
     # Setting first solution heuristic.
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
@@ -219,4 +219,4 @@ def main(companies_to_remove, visualise=False):
         open_maps(filename, list_of_routes)
 
 if __name__ == '__main__':
-    main(visualise=True)
+    main(visualise=False)

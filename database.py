@@ -4,6 +4,7 @@ import requests
 import json
 import pandas as pd
 import pickle
+from ast import literal_eval
 
 def get_info(filename):
     """ returns a list of addresses and corresponding time params from address database
@@ -73,7 +74,6 @@ def initial_database(filename):
         for destination in addresses:
             database[source[0]][destination[0]] = get_distance(source[1], destination[1])
         print(source[0], 'is done')
-
     with open(filename+'.pkl', 'wb') as f:
         pickle.dump(database, f)
 
@@ -138,7 +138,6 @@ def update_database(column, filename):
     with open(filename+'.pkl', 'wb') as f:
         pickle.dump(database, f)
 
-
 def remove_from_database(rem_loc, filename):
     """Removes locations from the database
         params: 
@@ -179,6 +178,8 @@ def create_distance_matrix(filename, companies):
     with open(filename+'.pkl', 'rb') as f:
         database = pickle.load(f)
 
+    #print(database['Booking.com Atrium'])
+
     distance_matrix = []
     for source in companies:
         source_distances = []
@@ -192,3 +193,51 @@ def create_distance_matrix(filename, companies):
         distance_matrix.append(source_distances)
     return distance_matrix
 
+def create_database(filename, company_list, capacities=[200, 200, 200, 200, 200], create=False):
+
+    # call this function if you want to create a new pickle with distances
+    if create == True:
+        initial_database(filename)
+
+    # this function can be used to add a company to the database pickle
+    #add_to_database(['Infinity', 'Amstelveenseweg 500, 1081 KL Amsterdam NL', 5], 'Mypup_bakfiets')
+
+    # this function can be used to update a column in the pkl
+    # update_database('Demands', filename)
+
+    with open(filename+'.pkl', 'rb') as f:
+        database_pickle = pickle.load(f)
+
+    daily_company_loadtimes = []
+    # get all the load times of the companies and append them in order to list
+    for company in company_list:
+        daily_company_loadtimes.append(database_pickle[company]['Loadtime'])
+
+    daily_company_timewindows = []
+    # get the time windows for the companies and append them in order to list
+    for company in company_list:
+        daily_company_timewindows.append(literal_eval(database_pickle[company]['Timewindow']))
+
+    daily_company_demands = []
+    # get the demands for the companies and append them in order to list
+    for company in company_list:
+        daily_company_demands.append(database_pickle[company]['Demands'])
+
+    # initialize the data as a dict and add keys with their values
+    data = {}
+    data['distance_matrix'] = create_distance_matrix(filename, company_list)
+    data['loadtimes'] = daily_company_loadtimes
+    data['demands'] = daily_company_demands
+    data['vehicle_capacities'] = capacities
+    data['num_vehicles'] = len(data['vehicle_capacities'])
+    data['depot'] = 0
+    data['time_windows'] = daily_company_timewindows
+    data['initial_routes'] = [
+         [0, 2, 18, 33, 26, 1, 49, 34, 5, 6, 0],
+         [0, 14, 36, 38, 39, 37, 8, 30, 10, 12, 9, 0],
+         [0, 13, 43, 42, 44, 11, 0],
+         [0, 17, 50, 29, 27, 47, 35, 3, 24, 7, 15, 0],
+         [0, 31, 28, 16, 4, 46, 41, 0]
+              ]
+              
+    return data

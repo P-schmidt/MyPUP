@@ -58,6 +58,7 @@ def create_database(filename, company_list, capacities=[200, 200, 200, 200, 200]
          [0, 17, 50, 29, 27, 47, 35, 3, 24, 7, 15, 0],
          [0, 31, 28, 16, 4, 46, 41, 0]
               ]
+              
     return data
 
 def print_solution(data, manager, routing, assignment, company_list):
@@ -134,7 +135,7 @@ def open_maps(filename, list_of_routes):
 
 def main(companies_to_remove=[], visualise=False):
     """Solve the CVRP problem."""
-    filename = 'data/Mypup_bus_comp'
+    filename = 'data/Mypup_bus'
 
     # create a list with all the companies as daily_company_list tester
     df = pd.read_csv(filename+'.csv')
@@ -147,8 +148,7 @@ def main(companies_to_remove=[], visualise=False):
                             'UVA SP904', 'Ymere']
 
     # removes the companies to be skipped from the company_list
-    # [company_list.remove(company) for company in companies_to_remove]
-
+    [company_list.remove(company) for company in companies_to_remove]
 
     print('Total number of companies to be visited', len(company_list))
 
@@ -186,7 +186,7 @@ def main(companies_to_remove=[], visualise=False):
         data['vehicle_capacities'],  # vehicle maximum capacities
         True,  # start cumul to zero
         'Capacity')
-
+        
 
     transit_callback_index = routing.RegisterTransitCallback(time_callback)
 
@@ -197,7 +197,7 @@ def main(companies_to_remove=[], visualise=False):
     routing.AddDimension(
         transit_callback_index,
         2000,  # allow waiting time
-        14400,  # maximum time per vehicle
+        28400,  # maximum time per vehicle
         False,  # Don't force start cumul to zero.
         time)
     time_dimension = routing.GetDimensionOrDie(time)
@@ -218,28 +218,12 @@ def main(companies_to_remove=[], visualise=False):
         routing.AddVariableMinimizedByFinalizer(
             time_dimension.CumulVar(routing.End(i)))
 
-    # sets the capacity constraint
-    def demand_callback(from_index):
-        """Returns the demand of the node."""
-        # Convert from routing variable Index to demands NodeIndex.
-        from_node = manager.IndexToNode(from_index)
-        return data['demands'][from_node]
-
-        demand_callback_index = routing.RegisterUnaryTransitCallback(
-            demand_callback)
-        routing.AddDimensionWithVehicleCapacity(
-            demand_callback_index,
-            0,  # null capacity slack
-            data['vehicle_capacities'],  # vehicle maximum capacities
-            True,  # start cumul to zero
-            'Capacity')
-
     # Setting first solution heuristic.
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
         routing_enums_pb2.FirstSolutionStrategy.PATH_MOST_CONSTRAINED_ARC)
 
-
+    print('start solving')
     # Solve the problem.
     assignment = routing.SolveWithParameters(search_parameters)
 
