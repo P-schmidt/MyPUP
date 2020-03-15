@@ -22,7 +22,7 @@ def create_list_of_routes(data, manager, routing, assignment, company_list):
         while not routing.IsEnd(index):
             node_index = manager.IndexToNode(index)
             time_var = time_dimension.CumulVar(index)
-            route_load += data['demands'][node_index]
+            route_load += data['loadtimes'][node_index]
             companies_on_route.append(company_list[node_index])
             index = assignment.Value(routing.NextVar(index))
         time_var = time_dimension.CumulVar(index)
@@ -37,7 +37,7 @@ def create_list_of_routes(data, manager, routing, assignment, company_list):
 
     return list_of_routes, total_time-total_load
 
-def vrp_script(data, company_list, printer=False):
+def vrp_script(data, company_list, printer=True):
     # Create the routing index manager.
     manager = pywrapcp.RoutingIndexManager(len(data['distance_matrix']),
                                            data['num_vehicles'], data['depot'])
@@ -52,7 +52,7 @@ def vrp_script(data, company_list, printer=False):
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
         # data['demands'] adds the loading time to the travel time
-        return (data['loadtimes'][from_node]*60) + data['distance_matrix'][from_node][to_node]
+        return (data['loadtimes'][from_node] * 60) + data['distance_matrix'][from_node][to_node]
 
     def demand_callback(from_index):
         """Returns the demand of the node."""
@@ -78,7 +78,7 @@ def vrp_script(data, company_list, printer=False):
     time = 'Time'
     routing.AddDimension(
         transit_callback_index,
-        2000,  # allow waiting time
+        1000,  # allow waiting time
         14400,  # maximum time per vehicle
         False,  # Don't force start cumul to zero.
         time)
@@ -106,7 +106,7 @@ def vrp_script(data, company_list, printer=False):
         routing_enums_pb2.FirstSolutionStrategy.PATH_MOST_CONSTRAINED_ARC)
 
     # sets the time limit in seconds
-    search_parameters.time_limit.seconds = 20
+    search_parameters.time_limit.seconds = 5
 
     # Solve the problem.
     assignment = routing.SolveWithParameters(search_parameters)
@@ -147,9 +147,9 @@ def print_initial_solution(data, company_list):
     return round(total_distance/60)
 
 
-def main(visualise = False, init_compare = True):
+def main(visualise = True, init_compare = True):
     correct = 0
-    capacities = [250, 250, 250, 250, 250]
+    capacities = [200, 200, 200, 200, 200]
 
     filename = 'data/Mypup_bus'
 
@@ -183,64 +183,41 @@ def main(visualise = False, init_compare = True):
         # if visualise == True:
         #     vrp.open_maps(filename, initial_names)
 
-    perfect_time = total_initial_time
 
-    six_time = total_initial_time
-    six_routes = []
-    six_capacity = []
+    data['vehicle_capacities'] = capacities
+    data['num_vehicles'] = len(capacities)
 
-    capacity_object = itertools.permutations(capacities)
-    capacity_list = list(set(capacity_object))
+    loadfactor = 1
+    routes = 0
+    vehicles_used = 6
 
-    options = [list(cap) for cap in capacity_list]
+    while vehicles_used > 5 and routes is 0:
+        routes, total_optimized_time = vrp_script(data, company_list, printer=False)
+        if routes is 0:
+            data['vehicle_capacities'].append(200)
+            data['num_vehicles'] = len(data['vehicle_capacities'])
+            print('Data_num_vehicles = ', data['num_vehicles'])
+            if data['num_vehicles'] == 7:
+                data['vehicle_capacities'] = [200, 200, 200, 200, 200]
+                data['num_vehicles'] = len(data['vehicle_capacities'])
+                loadfactor -= 0.1
+                data['loadtimes'] = [loadtime * loadfactor for loadtime in data['loadtimes']]
+                print("loadfactor is now ", loadfactor)
+            print(f"Vehicles used {vehicles_used}")
+        else:
+            print(f"aangekomen {vehicles_used}")
+            routes = [route for route in routes if route != ['Mypup', 'Mypup']]
+            vehicles_used = len(routes)
+#             print(f"\n\n\nHier aangekomen; loadfactor is {loadfactor} \
+# vehicles used = {vehicles_used}")
 
-    for option in options:
-        print(f"\noption = {option}")
-        data['vehicle_capacities'] = option
-        data['num_vehicles'] = len(option)
-        while True:
-            routes, total_optimized_time = vrp_script(data, company_list)
-            if routes == 0:
-                option.append(200)
-                print("added capacity total is now ", sum(option))
-                data['vehicle_capacities'] = option
-                data['num_vehicles'] = len(option)
-            else:
-                break
-        # get rid of routes that contain no companies
-        routes = [route for route in routes if route != ['Mypup', 'Mypup']]
+    # used to print the routes with correct parameters
+    routes, total_optimized_time = vrp_script(data, company_list, printer=True)
 
-    print(option)
+    # get rid of routes that contain no mypup->mypup routes
+    routes = [route for route in routes if route != ['Mypup', 'Mypup']]
+
     print('num of vehicles: ', len(routes))
-    print(routes)
-    #     print(f"else time {total_optimized_time} routes {len(routes)}")
-    #     # if optimized time is shortest found and uses 5 vehicles, save it
-    #     if total_optimized_time <= perfect_time and len(routes) < 6:
-    #         perfect_time = total_optimized_time
-    #         perfect_routes = routes
-    #         perfect_capacities = option
-    #         print(f"perfect_time = {perfect_time}, capacities = {perfect_capacities}")
-    #     # else save the shortest route using 6 vehicles
-    #     elif total_optimized_time < six_time and len(routes) == 6:
-    #         six_time = total_optimized_time
-    #         six_routes = routes
-    #         six_capacity = option
-    #         print(f"six_time = {six_time}, capacities = {six_capacity}")
-
-
-    # if perfect_time != total_initial_time:
-    #     print("Perfect time = ", perfect_time)
-    #     print("Perfect routes = ", perfect_routes)
-    #     print("Perfect capacity = ", perfect_capacities, "\n")
-    # else:
-    #     print("Six time = ", six_time)
-    #     print("Six routes = ", six_routes)
-    #     print("Six capacity = ", six_capacity)
-
-    # resulting_time = perfect_time if perfect_time != total_initial_time else six_time
-    # resulting_routes = perfect_routes if perfect_time != total_initial_time else six_routes
-    # resulting_capacities = perfect_capacities if perfect_time != total_initial_time else six_capacity
-
     print(f"The optimized driving time is {total_optimized_time}")
 
     if init_compare == True:
@@ -250,7 +227,6 @@ def main(visualise = False, init_compare = True):
     # routes = [route for route in resulting_routes if route != ['Mypup', 'Mypup']]
 
     print(f"Number of vehicles used in optimized solution: {len(routes)}")
-
 
     # visualises the routes if set to true
     if visualise == True:

@@ -64,17 +64,23 @@ def print_solution(data, manager, routing, assignment, company_list):
     """Prints assignment on console."""
     time_dimension = routing.GetDimensionOrDie('Time')
     total_time = 0
-    total_load = 0
+    total_demand = 0
+    total_loading_time = 0
+    total_waiting_time = 0
     list_of_routes =[]
     for vehicle_id in range(data['num_vehicles']):
         index = routing.Start(vehicle_id)
         plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
-        route_load = 0
+        route_demand = 0
+        loading_time = 0
+        wait_time = 0
         companies_on_route = []
         while not routing.IsEnd(index):
             node_index = manager.IndexToNode(index)
             time_var = time_dimension.CumulVar(index)
-            route_load += data['demands'][node_index]
+            route_demand += data['demands'][node_index]
+            loading_time += data['loadtimes'][node_index]
+            wait_time += assignment.Max(time_var) - assignment.Min(time_var)
             plan_output += '{0} Time({1},{2}) -> '.format(
                 company_list[node_index], round(assignment.Min(time_var)/60),
                 round(assignment.Max(time_var)/60))
@@ -87,14 +93,20 @@ def print_solution(data, manager, routing, assignment, company_list):
         companies_on_route.append(company_list[manager.IndexToNode(index)])
         plan_output += 'Time of the route: {}min\n'.format(
             round(assignment.Min(time_var)/60))
-        plan_output += 'Loading time/capacity of the route: {} minutes'.format(route_load)
+        plan_output += 'Demand of the route: {}\n'.format(route_demand)
+        plan_output += 'Loading times of the route: {} minutes\n'.format(loading_time)
+        plan_output += 'Waiting time of the route: {} minutes'.format(round(wait_time/60))
         list_of_routes.append(companies_on_route)
         print(plan_output)
-        print('Total travelling time of route: {}\n'.format(round(assignment.Min(time_var)/60)-route_load))
-        total_load += route_load
+        print('Total travelling time of route: {} min\n'.format(round(assignment.Min(time_var)/60-loading_time)))
+        total_demand += route_demand
+        total_loading_time += loading_time
         total_time += assignment.Min(time_var)
-    print('Total travelling of all routes: {} min'.format(round(total_time/60)-total_load))
-    print('Total loading time of all routes: {} min'.format(total_load))
+        total_waiting_time += wait_time
+    print('Total travelling of all routes: {} min'.format(round(total_time/60-total_loading_time)))
+    print('Total loading time of all routes: {} min'.format(round(total_loading_time)))
+    print('Total demand of all routes: {}'.format(total_demand))
+    print('Waiting time of the route: {} minutes'.format(round(total_waiting_time/60)))
 
     return list_of_routes
 
@@ -157,14 +169,14 @@ def main(companies_to_remove=[], visualise=False):
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
         # data['demands'] adds the loading time to the travel time
-        return (data['loadtimes'][from_node]*60) + data['distance_matrix'][from_node][to_node]
+        return (data['loadtimes'][from_node] * 60) + data['distance_matrix'][from_node][to_node]
 
     def demand_callback(from_index):
         """Returns the demand of the node."""
         # Convert from routing variable Index to demands NodeIndex.
         # print('index = ', from_index)
         from_node = manager.IndexToNode(from_index)
-        return data['loadtimes'][from_node]
+        return data['demands'][from_node]
 
     demand_callback_index = routing.RegisterUnaryTransitCallback(
         demand_callback)
