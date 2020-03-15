@@ -25,11 +25,11 @@ def create_database(filename, company_list, create=False):
 
     with open(filename+'.pkl', 'rb') as f:
         database_pickle = pickle.load(f)
-    
+
     daily_company_loadtimes = []
     # get all the load times of the companies and append them in order to list
     for company in company_list:
-        daily_company_loadtimes.append(database_pickle[company]['Loadtime'])  
+        daily_company_loadtimes.append(database_pickle[company]['Loadtime'])
 
     daily_company_timewindows = []
     # get the time windows for the companies and append them in order to list
@@ -39,9 +39,9 @@ def create_database(filename, company_list, create=False):
     # initialize the data as a dict and add keys with their values
     data = {}
     data['distance_matrix'] = db.create_distance_matrix(filename, company_list)
-    data['num_vehicles'] = 2
     data['demands'] = daily_company_loadtimes
-    data['vehicle_capacities'] = [45, 60]
+    data['vehicle_capacities'] = [200, 200, 200, 200, 200, 200, 200]
+    data['num_vehicles'] = len(data['vehicle_capacities'])
     data['depot'] = 0
     data['time_windows'] = daily_company_timewindows
 
@@ -73,11 +73,11 @@ def print_solution(data, manager, routing, assignment, company_list):
         companies_on_route.append(company_list[manager.IndexToNode(index)])
         plan_output += 'Time of the route: {}min\n'.format(
             round(assignment.Min(time_var)/60))
-        plan_output += 'Loading time of the route: {} minutes\n'.format(route_load) 
+        plan_output += 'Loading time of the route: {} minutes\n'.format(route_load)
         list_of_routes.append(companies_on_route)
         print(plan_output)
         total_time += assignment.Min(time_var)
-    print('Total time of all routes: {}min'.format(round(total_time/60)))   
+    print('Total time of all routes: {}min'.format(round(total_time/60)))
     return list_of_routes
 
 def open_maps(filename, list_of_routes):
@@ -111,10 +111,10 @@ def main(visualise=False):
     company_list = df['Company'].values.tolist()
 
     # this is the list of companies that have no packages to be delivered
-    #companies_to_remove = ['UVA BH / OIH', 'UVA UB Singel 425', 'Spakler', 'Nationale Nederlanden Amsterdam', 'Infinity']
+    companies_to_remove = ['Newday Offices Almere']
 
     # removes the companies to be skipped from the company_list
-    #[company_list.remove(company) for company in companies_to_remove]
+    [company_list.remove(company) for company in companies_to_remove]
 
     # Instantiate the data problem.
     data = create_database(filename, company_list)
@@ -126,13 +126,12 @@ def main(visualise=False):
     # Create Routing Model.
     routing = pywrapcp.RoutingModel(manager)
 
-
     def time_callback(from_index, to_index):
         """Returns the travel time between the two nodes."""
         # Convert from routing variable Index to time matrix NodeIndex.
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
-        return (data['demands'][from_node]*60) + data['distance_matrix'][from_node][to_node]
+        return (data['demands'][from_node] * 30) + data['distance_matrix'][from_node][to_node]
 
     def demand_callback(from_index):
         """Returns the demand of the node."""
@@ -158,11 +157,12 @@ def main(visualise=False):
     time = 'Time'
     routing.AddDimension(
         transit_callback_index,
-        600,  # allow waiting time
-        10000,  # maximum time per vehicle
+        2000,  # allow waiting time
+        18000,  # maximum time per vehicle
         False,  # Don't force start cumul to zero.
         time)
     time_dimension = routing.GetDimensionOrDie(time)
+
     # Add time window constraints for each location except depot.
     for location_idx, time_window in enumerate(data['time_windows']):
         if location_idx == 0:
@@ -180,27 +180,12 @@ def main(visualise=False):
         routing.AddVariableMinimizedByFinalizer(
             time_dimension.CumulVar(routing.End(i)))
 
-    # sets the capacity constraint
-    def demand_callback(from_index):
-        """Returns the demand of the node."""
-        # Convert from routing variable Index to demands NodeIndex.
-        from_node = manager.IndexToNode(from_index)
-        return data['demands'][from_node]
-
-        demand_callback_index = routing.RegisterUnaryTransitCallback(
-            demand_callback)
-        routing.AddDimensionWithVehicleCapacity(
-            demand_callback_index,
-            0,  # null capacity slack
-            data['vehicle_capacities'],  # vehicle maximum capacities
-            True,  # start cumul to zero
-            'Capacity')
-
     # Setting first solution heuristic.
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
         routing_enums_pb2.FirstSolutionStrategy.PATH_MOST_CONSTRAINED_ARC)
 
+    print("hier aangekomen")
 
     # Solve the problem.
     assignment = routing.SolveWithParameters(search_parameters)

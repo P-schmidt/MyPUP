@@ -37,7 +37,7 @@ def create_list_of_routes(data, manager, routing, assignment, company_list):
 
     return list_of_routes, total_time-total_load
 
-def vrp_script(data, company_list, print=False):
+def vrp_script(data, company_list, printer=False):
     # Create the routing index manager.
     manager = pywrapcp.RoutingIndexManager(len(data['distance_matrix']),
                                            data['num_vehicles'], data['depot'])
@@ -52,7 +52,7 @@ def vrp_script(data, company_list, print=False):
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
         # data['demands'] adds the loading time to the travel time
-        return (data['demands'][from_node]*60) + data['distance_matrix'][from_node][to_node]
+        return (data['loadtimes'][from_node]*60) + data['distance_matrix'][from_node][to_node]
 
     def demand_callback(from_index):
         """Returns the demand of the node."""
@@ -100,22 +100,6 @@ def vrp_script(data, company_list, print=False):
         routing.AddVariableMinimizedByFinalizer(
             time_dimension.CumulVar(routing.End(i)))
 
-    # sets the capacity constraint
-    def demand_callback(from_index):
-        """Returns the demand of the node."""
-        # Convert from routing variable Index to demands NodeIndex.
-        from_node = manager.IndexToNode(from_index)
-        return data['demands'][from_node]
-
-        demand_callback_index = routing.RegisterUnaryTransitCallback(
-            demand_callback)
-        routing.AddDimensionWithVehicleCapacity(
-            demand_callback_index,
-            0,  # null capacity slack
-            data['vehicle_capacities'],  # vehicle maximum capacities
-            True,  # start cumul to zero
-            'Capacity')
-
     # Setting first solution heuristic.
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
@@ -128,7 +112,7 @@ def vrp_script(data, company_list, print=False):
     assignment = routing.SolveWithParameters(search_parameters)
 
     if assignment:
-        if print == True:
+        if printer == True:
             _ = vrp.print_solution(data, manager, routing, assignment, company_list)
         list_of_routes, time = create_list_of_routes(data, manager, routing, assignment, company_list)
         return list_of_routes, time
@@ -165,7 +149,7 @@ def print_initial_solution(data, company_list):
 
 def main(visualise = False, init_compare = True):
     correct = 0
-    capacities = [200, 200, 200, 200, 200]
+    capacities = [250, 250, 250, 250, 250]
 
     filename = 'data/Mypup_bus'
 
