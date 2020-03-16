@@ -1,8 +1,10 @@
 import wx
 import wx.xrc
+import sys
 import database as db
-import bus_vrp_tw as bus_vrp
+import optimizer
 import bakfiets_vrp_tw as bakfiets_vrp
+import t
 
 ###########################################################################
 ## Class Frame
@@ -14,7 +16,7 @@ class Frame(wx.Frame):
 		wx.Frame.__init__ (self, parent, id = wx.ID_ANY, title = title, pos = wx.DefaultPosition, size = wx.Size(500,300), style = wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL)
 		# init variables
 		self.init = init
-		self.config = 'bike'
+		self.config = 'bus'
 		self.selection = []
 		self.removed = []
 		self.ListboxLocsChoices = []
@@ -73,8 +75,11 @@ class Frame(wx.Frame):
 
 		bSizerButtons.Add((0, 0), 1, wx.EXPAND, 5)
 
+		# btn = wx.Button(self, label="Open Popup")
+		# btn.Bind(wx.EVT_BUTTON, self.onShowPopup)
+
 		self.ButtonPlan = wx.Button(self, wx.ID_ANY, u"Maak Planning", wx.DefaultPosition, wx.DefaultSize, 0)
-		self.ButtonPlan.Bind(wx.EVT_BUTTON, self.plan_click)
+		self.ButtonPlan.Bind(wx.EVT_BUTTON, self.onShowPopup)
 		bSizerButtons.Add(self.ButtonPlan, 0, wx.ALIGN_RIGHT|wx.ALL|wx.TOP, 5)
 		bSizerMain.Add(bSizerButtons, 0, wx.ALL|wx.EXPAND, 5)
 		bSizerFrameMain.Add(bSizerMain, 1, wx.ALL|wx.EXPAND, 0)
@@ -94,13 +99,16 @@ class Frame(wx.Frame):
 		self.Plan.Append(self.menuItemHomeBike)
 
 		self.Edit = wx.Menu()
-		self.menuItemEditAdd = wx.MenuItem(self.Edit, wx.ID_ANY, u"Voeg Toe", wx.EmptyString, wx.ITEM_NORMAL)
+		self.menuItemEditAdd = wx.MenuItem(self.Edit, wx.ID_ANY, u"Voeg adres toe", wx.EmptyString, wx.ITEM_NORMAL)
 		self.Edit.Append(self.menuItemEditAdd)
 
-		self.MenuItemEditRemove = wx.MenuItem(self.Edit, wx.ID_ANY, u"Verwijder", wx.EmptyString, wx.ITEM_NORMAL)
+		self.MenuItemEditRemove = wx.MenuItem(self.Edit, wx.ID_ANY, u"Verwijder adres", wx.EmptyString, wx.ITEM_NORMAL)
 		self.Edit.Append(self.MenuItemEditRemove)
 
-		self.menubarMain.Append(self.Edit, u"Wijzig Adressen")
+		self.MenuItemParameters = wx.MenuItem(self.Edit, wx.ID_ANY, u"Wijzig Parameters", wx.EmptyString, wx.ITEM_NORMAL)
+		self.Edit.Append(self.MenuItemParameters)
+
+		self.menubarMain.Append(self.Edit, u"Wijzig Variabelen")
 
 		self.SetMenuBar(self.menubarMain)
 		self.Bind(wx.EVT_MENU, self.menuhandler)
@@ -157,11 +165,13 @@ class Frame(wx.Frame):
 		self.update_listbox(remove=True)
 		
 
-	def plan_click(self, event):
+	def plan_click(self):
 		if self.config == 'bike':
 			bakfiets_vrp.main(self.removed, True)
 		if self.config == 'bus':
-			bus_vrp.main(self.removed, True)
+			optimizer.main(self.removed, True)	
+		
+
 
 	def selection_made(self, event):
 		"""Update current selection whenever new selection is made. """
@@ -179,9 +189,55 @@ class Frame(wx.Frame):
 			self.config = 'bike'
 		self.reset(1)
 	
-	def popup_window(self):
-		Frame(None, 'POPUPWINDOW NEEF', main=False)
+	def onShowPopup(self, event):
+		MyForm(self.GetTopLevelParent(), self.removed, self.config).Show()
+		
 
+
+class RedirectText(object):
+	def __init__(self,aWxTextCtrl):
+		self.out=aWxTextCtrl
+
+	def write(self,string):
+		self.out.WriteText(string)
+ 
+class MyForm(wx.Frame):
+ 
+	def __init__(self, parent, removed, config):
+		wx.Frame.__init__(self, parent, wx.ID_ANY, "Route output")
+		self.removed = removed
+		self.config = config
+
+		# Add a panel so it looks the correct on all platforms
+		panel = wx.Panel(self, wx.ID_ANY)
+		
+		# Static Header
+		self.StaticHead = wx.StaticText(panel, wx.ID_ANY, u"De resulterende routes worden hieronder geprint:", wx.DefaultPosition, wx.DefaultSize, 0)
+		self.StaticHead.Wrap(-1)
+		self.StaticHead.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNTEXT))
+		
+
+		log = wx.TextCtrl(panel, wx.ID_ANY, size=(300,100),
+						  style = wx.TE_MULTILINE|wx.TE_READONLY|wx.HSCROLL)
+		btn = wx.Button(panel, wx.ID_ANY, 'Maak Planning')
+		self.Bind(wx.EVT_BUTTON, self.onButton, btn)
+
+		# Add widgets to a sizer
+		sizer = wx.BoxSizer(wx.VERTICAL)
+		sizer.Add(self.StaticHead, 0, wx.ALIGN_CENTER|wx.ALL, 0)
+		sizer.Add(log, 1, wx.ALL|wx.EXPAND, 5)
+		sizer.Add(btn, 0, wx.ALL|wx.CENTER, 5)
+		panel.SetSizer(sizer)
+
+		# redirect text here
+		redir=RedirectText(log)
+		sys.stdout=redir
+
+	def onButton(self, event):  
+		if self.config == 'bike':
+			bakfiets_vrp.main(self.removed, True)
+		if self.config == 'bus':
+			optimizer.main(self.removed, True) 
 
 # init and show App
 app = wx.App(False)

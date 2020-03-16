@@ -93,7 +93,13 @@ def vrp_script(data, company_list, printer=False):
     return 0, 0
 
 
-def main(visualise = False, init_compare = True):
+def main(companies_to_remove=[], visualise = False, init_compare = True, sample=False):
+    """main function sets route planning function in motion. Takes the following arguments:
+        companies_to_remove(optional) : list of companies that should not be taken into account for route planning.
+        visualise(optional) : Google Maps pages with routes are created if True.
+        init_compare(optional) : comparison with initial routes is made if True.
+        sample(optional) : a random sample of companies is removed from planning if True."""
+
     capacities = [200, 200, 200, 200, 200]
 
     filename = 'data/Mypup_bus'
@@ -107,7 +113,7 @@ def main(visualise = False, init_compare = True):
     initial_company_list = copy.copy(company_list)
 
     # this is the list of companies that have no packages to be delivered
-    companies_to_remove = ['Spicalaan Hoofddorp', 'HUT Beursstraat', 'HUT Warmoesstraat', 'HVA DMH', 'HVA FMB', 'HVA NTH']
+    # companies_to_remove = ['Spicalaan Hoofddorp', 'HUT Beursstraat', 'HUT Warmoesstraat', 'HVA DMH', 'HVA FMB', 'HVA NTH']
 
     # creates a list of index numbers for the companies that are removed.
     index_numbers = []
@@ -117,21 +123,25 @@ def main(visualise = False, init_compare = True):
     
     
     #create random numbers, and remove the companies belonging to those spots.
-    for _ in range(4):
-        number = randint(0, len(company_list)) - 1
-        if number != 0:
-            index_numbers.append(number)
-            companies_to_remove.append(company_list[number])
-	        # companies_to_remove.append(initial_company_list[number])
-        else:
-            pass
-
-    print(set(companies_to_remove))
-	
+    if sample:
+        for _ in range(4):
+            number = randint(0, len(company_list)) - 1
+            if number != 0:
+                index_numbers.append(number)
+                companies_to_remove.append(company_list[number])
+                # companies_to_remove.append(initial_company_list[number])
+            else:
+                pass
+    
+    print("Verwijderde bedrijven:")
+    for comp in set(companies_to_remove):
+        print(comp)
+    print("\n")
 
     # removes the companies to be skipped from the company_list
     [company_list.remove(company) for company in set(companies_to_remove)]
     
+    print(f"Totaal aantal te bezoeken bedrijven: {len(company_list)} \n")
     # Instantiate the data problem.
     data = db.create_database(filename, company_list, capacities)
 
@@ -142,6 +152,7 @@ def main(visualise = False, init_compare = True):
         for route in data2['initial_routes']:
             new_route = [location for location in route if location not in set(index_numbers)]
             new_init_routes.append(new_route)
+        
         
         data2['initial_routes'] = new_init_routes
 
@@ -164,15 +175,15 @@ def main(visualise = False, init_compare = True):
         routes, total_optimized_time = vrp_script(data, company_list, printer=False)
 
         if routes is 0 or data['num_vehicles'] == 8:
-            print(data['num_vehicles'])
+            # print(data['num_vehicles'])
             data['vehicle_capacities'] = [200, 200, 200, 200, 200]
             data['num_vehicles'] = len(data['vehicle_capacities'])
-            loadfactor -= 0.1
+            loadfactor = round(loadfactor - 0.1, 2)
             data['loadtimes'] = [loadtime * loadfactor for loadtime in data['loadtimes']]
-            print(f'loadfactor: {loadfactor}')
+            # print(f'loadfactor: {loadfactor}')
         else:
-            print(data['num_vehicles'])
-            print(f'else loadfactor: {loadfactor}')
+            # print(data['num_vehicles'])
+            # print(f'else loadfactor: {loadfactor}')
             routes = [route for route in routes if route != ['Mypup', 'Mypup']]
             vehicles_used = len(routes)
 
