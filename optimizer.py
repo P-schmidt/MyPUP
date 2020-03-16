@@ -139,6 +139,10 @@ def main(companies_to_remove=[], visualise = False, init_compare = True, sample=
     print("\n")
 
     # removes the companies to be skipped from the company_list
+    bike_list = ['Spicalaan Hoofddorp', 'HUT Beursstraat', 'HUT Warmoesstraat', 'HVA DMH', 'HVA FMB', 'HVA NTH']
+    for comp in bike_list:
+        companies_to_remove.append(comp)
+        
     [company_list.remove(company) for company in set(companies_to_remove)]
     
     print(f"Totaal aantal te bezoeken bedrijven: {len(company_list)} \n")
