@@ -22,6 +22,7 @@ def create_url(list_of_addresses):
             url += address+'/'
         else:
             extra_url += address+'/'
+    
     if extra_url != "https://www.google.com/maps/dir/":
         webbrowser.get('firefox').open_new(url)
         time.sleep(2)

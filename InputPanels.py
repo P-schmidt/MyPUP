@@ -4,6 +4,7 @@ import re
 import pickle
 import database as db
 
+#### Panel layout for adding companies and adjusting company information
 class InfoPanel(wx.Panel):
 	def __init__(self, parent, id=3, CompToAdjust=None):
 		wx.Panel.__init__(self, parent=parent, id=id)
@@ -135,6 +136,7 @@ class InfoPanel(wx.Panel):
 		self.Layout()
 
 	def AddStatic(self):
+		""" Adds header depending on id"""
 		if self.id in [3,4]:
 			self.Explainer = wx.StaticText(self.m_panelMain, wx.ID_ANY, u"Vul de bedrijfsinfo in.  Laat Demand leeg als deze hetzelfde is als de laadtijd. ", wx.DefaultPosition, wx.DefaultSize, 0)
 			self.Explainer.Wrap(-1)
@@ -163,6 +165,7 @@ class InfoPanel(wx.Panel):
 
 
 	def OnAdd(self, event):
+		"""Handles the back end functionality for the addition of companies """
 		Name = self.NameCtrl.GetValue()
 		Address = self.AddressCtrl.GetValue()
 		LoadTime = int(self.LoadTimeCtrl.GetValue())
@@ -187,6 +190,7 @@ class InfoPanel(wx.Panel):
 			dial.ShowModal()
 	
 	def FormatTW(self, TW, to_seconds=True):
+		"""Formats Time window correctly. to_seconds decides the direction of formatting. """
 		if to_seconds:
 			if TW == "":
 				return "(0, 14400)"
@@ -203,6 +207,7 @@ class InfoPanel(wx.Panel):
 			return f"{int(TW[0])},{int(TW[1])}"
 
 	def OnAdjustAction(self, event):
+		"""Handles the back end functionality for adjustments of company data. """
 		Name = self.NameCtrl.GetValue()
 		Address = self.AddressCtrl.GetValue()
 		LoadTime = int(self.LoadTimeCtrl.GetValue())
@@ -228,6 +233,7 @@ class InfoPanel(wx.Panel):
 			wx.OK | wx.ICON_INFORMATION)
 			dial.ShowModal()
 
+### Panel layout for adjustments in the model parameters
 class ParamPanel(wx.Panel):
 	def __init__(self, parent):
 		wx.Panel.__init__(self, parent=parent)

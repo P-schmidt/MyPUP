@@ -245,6 +245,3 @@ def create_database(filename, company_list, capacities=[200, 200, 200, 200, 200]
     return data
 
 
-
-
-

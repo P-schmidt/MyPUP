@@ -6,7 +6,7 @@ import pickle
 import database as db
 import optimizer
 import bakfiets_vrp_tw as bakfiets_vrp
-import CompInfo
+import InputPanels
 
 ###########################################################################
 ## Class Frame
@@ -16,7 +16,6 @@ class Frame(wx.Frame):
 	def __init__(self, parent, title, id = 1, CTA=None):
 		wx.Frame.__init__ (self, parent, id = wx.ID_ANY, title = title, pos = wx.DefaultPosition, size = wx.Size(500,300), style = wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL)
 		# init variables
-		#TODO: init nodig?
 		self.init = True 
 		self.id = id
 		self.selection = []
@@ -28,7 +27,7 @@ class Frame(wx.Frame):
 		self.SetSizeHints(wx.DefaultSize, wx.DefaultSize)
 		self.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW))
 
-				# Menu Bar Layout
+		# Menu Bar Layout
 		self.menubarMain = wx.MenuBar(0)
 		self.Plan = wx.Menu()
 		self.menubarMain.Append(self.Plan, u"Planner")
@@ -76,27 +75,24 @@ class Frame(wx.Frame):
 
 		self.SetMenuBar(self.menubarMain)
 		self.Bind(wx.EVT_MENU, self.menuhandler)
-		# TODO case switch
-
 		if self.id in [1,2]:
-			self.MainFrame()
+			self.PlanPanel()
 			self.init = False
 		elif self.id in [3,4]:
-			CompInfo.InfoPanel(self.GetTopLevelParent(), self.id)
+			InputPanels.InfoPanel(self.GetTopLevelParent(), self.id)
 		elif self.id == 5:
-			self.DelPanel()
+			self.AdjustPanel()
 		elif self.id == 6:
-			CompInfo.ParamPanel(self.GetTopLevelParent())
+			InputPanels.ParamPanel(self.GetTopLevelParent())
 		elif self.id in [7, 10, 11]:
-			self.DelPanel()
+			self.AdjustPanel()
 		elif self.id in [8,9]:
-			CompInfo.InfoPanel(self.GetTopLevelParent(), self.id, self.CTA)
+			InputPanels.InfoPanel(self.GetTopLevelParent(), self.id, self.CTA)
 	
 
 		self.Show()
 		
-	def MainFrame(self):
-		#TODO panel name
+	def PlanPanel(self):
 		# sizers for geometric arrangement of widgets
 		bSizerFrameMain = wx.BoxSizer(wx.VERTICAL)
 		bSizerMain = wx.BoxSizer(wx.VERTICAL)
@@ -149,7 +145,7 @@ class Frame(wx.Frame):
 		self.SetSizer(bSizerFrameMain)
 		self.Layout()
 			
-	def DelPanel(self):
+	def AdjustPanel(self):
 		# sizers for geometric arrangement of widgets
 		bSizerFrameMain = wx.BoxSizer(wx.VERTICAL)
 		bSizerMain = wx.BoxSizer(wx.VERTICAL)
@@ -214,7 +210,6 @@ class Frame(wx.Frame):
 			wx.OK | wx.ICON_INFORMATION)
 			dial.ShowModal()
 		else:
-
 			if self.id == 10:
 				with open('data/Mypup_bus.pkl', 'rb') as f:
 					database = pickle.load(f)
@@ -230,9 +225,9 @@ class Frame(wx.Frame):
 					db.remove_from_database(loc, 'data/Mypup_bakfiets')
 					db.add_to_database(info_list, 'data/Mypup_bus')
 
-				dial = wx.MessageDialog(None, 'De locaties zijn verplaatst naar de juiste planner!', 'Succes',
-					wx.OK | wx.ICON_INFORMATION)
-				dial.ShowModal()
+			dial = wx.MessageDialog(None, 'De locaties zijn verplaatst naar de juiste planner!', 'Succes',
+				wx.OK | wx.ICON_INFORMATION)
+			dial.ShowModal()
 
 	def OnAdjust(self, event):
 		CompToAdjust = self.ListboxLocs.GetString(self.selection[0])
@@ -243,7 +238,7 @@ class Frame(wx.Frame):
 		if CompToAdjust in db.database_list('data/Mypup_bus'):
 			self.Destroy()
 			Frame(None, 'Wijzig Bedrijfsgegevens', id=8, CTA=CompToAdjust)
-			# CompInfo.InfoPanel(self.GetTopLevelParent(), self.id, CompToAdjust)
+			# InputPanels.InfoPanel(self.GetTopLevelParent(), self.id, CompToAdjust)
 		else: 
 			self.Destroy()
 			Frame(None, 'Wijzig Bedrijfsgegevens', id=9, CTA=CompToAdjust)
@@ -316,7 +311,6 @@ class Frame(wx.Frame):
 				del self.ListboxLocsChoices[idx]
 	
 	def reset(self, event):
-		# TODO: nodig?
 		self.removed = []
 		if self.id == 2:
 			self.ListboxLocsChoices = sorted(db.database_list('data/Mypup_bakfiets'))
@@ -338,7 +332,6 @@ class Frame(wx.Frame):
 	def menuhandler(self, event):
 		"""Switches between configurations. """
 		id = event.GetId()
-		#TODO: Switch
 		if id == 1:
 			# self.id= 1
 			self.Destroy()

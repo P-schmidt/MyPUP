@@ -44,6 +44,7 @@ def create_database(filename, company_list, create=False):
     data['num_vehicles'] = len(data['vehicle_capacities'])
     data['depot'] = 0
     data['time_windows'] = daily_company_timewindows
+    print(daily_company_timewindows)
 
     return data
 
