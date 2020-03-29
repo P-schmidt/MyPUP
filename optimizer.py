@@ -113,7 +113,9 @@ def main(companies_to_remove=[], visualise = False, init_compare = True, sample=
     initial_company_list = copy.copy(company_list)
 
     # this is the list of companies that have no packages to be delivered
-    # companies_to_remove = ['Spicalaan Hoofddorp', 'HUT Beursstraat', 'HUT Warmoesstraat', 'HVA DMH', 'HVA FMB', 'HVA NTH']
+    bike_list = ['Spicalaan Hoofddorp', 'HUT Beursstraat', 'HUT Warmoesstraat', 'HVA DMH', 'HVA FMB', 'HVA NTH']
+    for comp in bike_list:
+        companies_to_remove.append(comp)
 
     # creates a list of index numbers for the companies that are removed.
     index_numbers = []
@@ -138,11 +140,8 @@ def main(companies_to_remove=[], visualise = False, init_compare = True, sample=
         print(comp)
     print("\n")
 
-    # removes the companies to be skipped from the company_list
-    bike_list = ['Spicalaan Hoofddorp', 'HUT Beursstraat', 'HUT Warmoesstraat', 'HVA DMH', 'HVA FMB', 'HVA NTH']
-    for comp in bike_list:
-        companies_to_remove.append(comp)
-        
+
+
     [company_list.remove(company) for company in set(companies_to_remove)]
     
     print(f"Totaal aantal te bezoeken bedrijven: {len(company_list)} \n")

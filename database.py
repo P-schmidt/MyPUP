@@ -80,7 +80,7 @@ def initial_database(filename):
 def add_to_database(new_loc, filename):
     """Adds new locations to the database.
         params:
-            new_loc: a list consisting of the company name, address and load time. <- is het niet slimmer om dit uit de CSV te halen dan het met de hand in te moeten voeren
+            new_loc: a list consisting of the company name, address, load time, demand and time window. <- is het niet slimmer om dit uit de CSV te halen dan het met de hand in te moeten voeren
             filename:  filename indicates what customer base should be retrieved from database. """
     
     # open database  
@@ -91,6 +91,8 @@ def add_to_database(new_loc, filename):
     database[new_loc[0]] = {}
     database[new_loc[0]]['Address'] = new_loc[1]
     database[new_loc[0]]['Loadtime'] = new_loc[2] 
+    database[new_loc[0]]['Demands'] = new_loc[3]
+    database[new_loc[0]]['Timewindow'] = new_loc[4]  
 
     # calculate distances to each existing location 
     for existing_loc in database.keys():
@@ -241,3 +243,8 @@ def create_database(filename, company_list, capacities=[200, 200, 200, 200, 200]
               ]
               
     return data
+
+
+
+
+
