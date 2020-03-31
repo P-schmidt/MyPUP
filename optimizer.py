@@ -8,7 +8,7 @@ import pickle
 import copy
 from random import randint
 
-def vrp_script(data, company_list, printer=False):
+def vrp_script(data, company_list, params, printer=False):
     # Create the routing index manager.
     manager = pywrapcp.RoutingIndexManager(len(data['distance_matrix']),
                                            data['num_vehicles'], data['depot'])
@@ -44,12 +44,11 @@ def vrp_script(data, company_list, printer=False):
 
     # Define cost of each arc.
     routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
-
     time = 'Time'
     routing.AddDimension(
         transit_callback_index,
         500,  # allow waiting time
-        10000,  # maximum time per vehicle
+        14400,  # maximum time per vehicle
         True,  # Don't force start cumul to zero.
         time)
     time_dimension = routing.GetDimensionOrDie(time)
@@ -93,27 +92,40 @@ def vrp_script(data, company_list, printer=False):
     return 0, 0
 
 
-def main(companies_to_remove=[], capacities=[200, 200, 200, 200, 200], loadfactor=1,  visualise=True, init_compare=False, testing=False):
+def main(companies_to_remove=[]):
     """main function sets route planning function in motion. Takes the following arguments:
         companies_to_remove(optional) : list of companies that should not be taken into account for route planning.
         visualise(optional) : Google Maps pages with routes are created if True.
         init_compare(optional) : comparison with initial routes is made if True.
         sample(optional) : a random sample of companies is removed from planning if True."""
+    
+    with open('data/params.pkl', 'rb') as f:
+        params = pickle.load(f)
 
+    params['visualise'] = False
+
+    capacities = [int(cap) for cap in params['capacities'].split(',')]
+    loadfactor = int(params['load_factor'])
+    visualise = params['visualise']
+    init_compare = params['init_compare']
+    testing = params['testing']
+
+    with open('data/params.pkl', 'wb') as f:
+        pickle.dump(params, f)
+        
     filename = 'data/Mypup_bus'
 
     # create a list with all the companies as daily_company_list tester
-    df = pd.read_csv(filename+'.csv')
-    df['Company'].replace(u'\xa0',u'', regex=True, inplace=True)
-    company_list = df['Company'].values.tolist()
+    # df = pd.read_csv(filename+'.csv')
+    # df['Company'].replace(u'\xa0',u'', regex=True, inplace=True)
+    # company_list = df['Company'].values.tolist()
+    with open(filename+'.pkl', 'rb') as f:
+        database = pickle.load(f)
+    company_list = list(database.keys())
 
     # make a shallow copy of company list to be used for initial routes
     initial_company_list = copy.copy(company_list)
 
-    # this is the list of companies that have no packages to be delivered
-    bike_list = ['Spicalaan Hoofddorp', 'HUT Beursstraat', 'HUT Warmoesstraat', 'HVA DMH', 'HVA FMB', 'HVA NTH']
-    for comp in bike_list:
-        companies_to_remove.append(comp)
 
     # creates a list of index numbers for the companies that are removed.
     index_numbers = []
@@ -136,15 +148,15 @@ def main(companies_to_remove=[], capacities=[200, 200, 200, 200, 200], loadfacto
     print("Verwijderde bedrijven:")
     for comp in set(companies_to_remove):
         print(comp)
-    print("\n")
 
 
 
     [company_list.remove(company) for company in set(companies_to_remove)]
     
-    print(f"Totaal aantal te bezoeken bedrijven: {len(company_list)} \n")
+    print(f"Totaal aantal te bezoeken bedrijven: {len(company_list)}")
 
-    print('capacities = ', capacities)
+
+    print()
     # Instantiate the data problem.
     data = db.create_database(filename, company_list, capacities)
 
@@ -167,7 +179,7 @@ def main(companies_to_remove=[], capacities=[200, 200, 200, 200, 200], loadfacto
     desired_vehicles = len(capacities)
     vehicles_used = data['num_vehicles']+1
 
-    routes, total_optimized_time = vrp_script(data, company_list, printer=False)
+    routes, total_optimized_time = vrp_script(data, company_list, params, printer=False)
     if routes:
         routes = [route for route in routes if route != ['Mypup', 'Mypup']]
         vehicles_used = len(routes)
@@ -175,42 +187,46 @@ def main(companies_to_remove=[], capacities=[200, 200, 200, 200, 200], loadfacto
     while vehicles_used > desired_vehicles or routes is 0:
         data['vehicle_capacities'].append(200)
         data['num_vehicles'] = len(data['vehicle_capacities'])
-        routes, total_optimized_time = vrp_script(data, company_list, printer=False)
+        routes, total_optimized_time = vrp_script(data, company_list, params, printer=False)
 
         if routes is 0 or data['num_vehicles'] == 8:
-            # print(data['num_vehicles'])
             data['vehicle_capacities'] = [200, 200, 200, 200, 200]
             data['num_vehicles'] = len(data['vehicle_capacities'])
             loadfactor = round(loadfactor - 0.1, 2)
             data['loadtimes'] = [loadtime * loadfactor for loadtime in data['loadtimes']]
-            # print(f'loadfactor: {loadfactor}')
         else:
-            # print(data['num_vehicles'])
-            # print(f'else loadfactor: {loadfactor}')
             routes = [route for route in routes if route != ['Mypup', 'Mypup']]
             vehicles_used = len(routes)
 
     # used to print the routes with correct parameters
-    routes, total_optimized_time = vrp_script(data, company_list, printer=True)
+    routes, total_optimized_time = vrp_script(data, company_list, params, printer=True)
 
-    print(f"Resulting capacities: {data['vehicle_capacities']} and loadfactor: {loadfactor}")
-
+    print(f"Resulting loadfactor: {loadfactor}") 
+    
     # get rid of routes that contain no mypup->mypup routes
     routes = [route for route in routes if route != ['Mypup', 'Mypup']]
 
     print(f"The optimized driving time is {round(total_optimized_time)}")
 
+    print(f"Number of vehicles used in found solution is {len(routes)}")
+    print()
+
     if init_compare == True:
         print(f"The difference between init and optimized = {total_initial_time-total_optimized_time}")
 
-    print(f"Number of vehicles used in optimized solution: {len(routes)}\n")
+    # Creates a list of urls
+    list_of_urls = vs.open_maps(filename, routes, visualise)
 
-    # visualises the routes if set to true
-    if visualise == True:
-        vs.open_maps(filename, routes)
+    for i, route in enumerate(routes):
+        print(f"Route for vehicle {i+1} is:")
+        for dest in route:
+            print(dest)
+        print()
+        for url in list_of_urls[i]:
+            print(url)
+        print()
 
-def get_params():
-    pass
 
 if __name__ == '__main__':
     main()
+

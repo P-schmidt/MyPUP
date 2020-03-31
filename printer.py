@@ -1,5 +1,6 @@
 def print_solution(data, manager, routing, assignment, company_list):
     """Prints assignment on console."""
+    routes_skipped = 0
     time_dimension = routing.GetDimensionOrDie('Time')
     total_time = 0
     total_demand = 0
@@ -35,16 +36,20 @@ def print_solution(data, manager, routing, assignment, company_list):
         plan_output += 'Loading times of the route: {} minutes\n'.format(round(loading_time))
         plan_output += 'Waiting time of the route: {} minutes'.format(round(wait_time/60))
         list_of_routes.append(companies_on_route)
-        print(plan_output)
-        print('Total travelling time of route: {} min\n'.format(round(assignment.Min(time_var)/60-loading_time)))
+        # print(plan_output)
+        if round(assignment.Min(time_var)/60-loading_time) != 0:
+            print('Total travelling time of route for vehicle {}: {} min'.format(vehicle_id+1 - routes_skipped, round(assignment.Min(time_var)/60-loading_time)))
+            print(f'Total loading time of this route: {round(loading_time)}\n')
+        else:
+            routes_skipped += 1
         total_demand += route_demand
         total_loading_time += loading_time
         total_time += assignment.Min(time_var)
         total_waiting_time += wait_time
-    print('Total travelling of all routes: {} min'.format(round(total_time/60-total_loading_time)))
-    print('Total loading time of all routes: {} min'.format(round(total_loading_time)))
-    print('Total demand of all routes: {}'.format(total_demand))
-    print('Waiting time of the route: {} minutes'.format(round(total_waiting_time/60)))
+    # print('Total travelling of all routes: {} min'.format(round(total_time/60-total_loading_time)))
+    # print('Total loading time of all routes: {} min'.format(round(total_loading_time)))
+    # print('Total demand of all routes: {}'.format(total_demand))
+    # print('Waiting time of the route: {} minutes'.format(round(total_waiting_time/60)))
 
     return list_of_routes, round(total_time/60-total_loading_time)
 

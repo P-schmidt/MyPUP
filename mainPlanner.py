@@ -136,7 +136,7 @@ class Frame(wx.Frame):
 
 		bSizerButtons.Add((0, 0), 1, wx.EXPAND, 5)
 
-		self.ButtonPlan = wx.Button(self, wx.ID_ANY, u"Maak Planning", wx.DefaultPosition, wx.DefaultSize, 0)
+		self.ButtonPlan = wx.Button(self, wx.ID_ANY, u"Ga naar Planner", wx.DefaultPosition, wx.DefaultSize, 0)
 		self.ButtonPlan.Bind(wx.EVT_BUTTON, self.onShowPopup)
 		bSizerButtons.Add(self.ButtonPlan, 0, wx.ALIGN_RIGHT|wx.ALL|wx.TOP, 5)
 		bSizerMain.Add(bSizerButtons, 0, wx.ALL|wx.EXPAND, 5)
@@ -238,7 +238,6 @@ class Frame(wx.Frame):
 		if CompToAdjust in db.database_list('data/Mypup_bus'):
 			self.Destroy()
 			Frame(None, 'Wijzig Bedrijfsgegevens', id=8, CTA=CompToAdjust)
-			# InputPanels.InfoPanel(self.GetTopLevelParent(), self.id, CompToAdjust)
 		else: 
 			self.Destroy()
 			Frame(None, 'Wijzig Bedrijfsgegevens', id=9, CTA=CompToAdjust)

@@ -237,7 +237,10 @@ class InfoPanel(wx.Panel):
 class ParamPanel(wx.Panel):
 	def __init__(self, parent):
 		wx.Panel.__init__(self, parent=parent)
-		
+
+		with open('data/params.pkl', 'rb') as f:
+			self.params = pickle.load(f)
+
 		bSizerFrameMain = wx.BoxSizer(wx.VERTICAL)
 
 		bSizerMain = wx.BoxSizer(wx.VERTICAL)
@@ -258,12 +261,12 @@ class ParamPanel(wx.Panel):
 
 		CapSizer = wx.BoxSizer(wx.HORIZONTAL)
 
-		self.Cap = wx.StaticText(self.m_panelMain, wx.ID_ANY, u"Begin Capaciteit:", wx.DefaultPosition, wx.DefaultSize, 0)
+		self.Cap = wx.StaticText(self.m_panelMain, wx.ID_ANY, u"Begin Capaciteit:             ", wx.DefaultPosition, wx.DefaultSize, 0)
 		self.Cap.Wrap(-1)
 
 		CapSizer.Add(self.Cap, 0, wx.ALIGN_CENTER|wx.ALL, 0)
 
-		self.CapCtrl = wx.TextCtrl(self.m_panelMain, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0)
+		self.CapCtrl = wx.TextCtrl(self.m_panelMain, wx.ID_ANY, f"{self.params['capacities']}", wx.DefaultPosition, wx.DefaultSize, 0)
 		CapSizer.Add(self.CapCtrl, 0, wx.ALIGN_CENTER|wx.ALL, 5)
 
 
@@ -271,12 +274,12 @@ class ParamPanel(wx.Panel):
 
 		LfSizer = wx.BoxSizer(wx.HORIZONTAL)
 
-		self.LF = wx.StaticText(self.m_panelMain, wx.ID_ANY, u"Load Factor:", wx.DefaultPosition, wx.DefaultSize, 0)
+		self.LF = wx.StaticText(self.m_panelMain, wx.ID_ANY, u"Load Factor:                      ", wx.DefaultPosition, wx.DefaultSize, 0)
 		self.LF.Wrap(-1)
 
 		LfSizer.Add(self.LF, 0, wx.ALIGN_CENTER|wx.ALL, 0)
 
-		self.LfCtrl = wx.TextCtrl(self.m_panelMain, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0)
+		self.LfCtrl = wx.TextCtrl(self.m_panelMain, wx.ID_ANY, f"{self.params['load_factor']}", wx.DefaultPosition, wx.DefaultSize, 0)
 		LfSizer.Add(self.LfCtrl, 0, wx.ALIGN_CENTER|wx.ALL, 5)
 
 
@@ -284,12 +287,12 @@ class ParamPanel(wx.Panel):
 
 		WaitTimeSizer = wx.BoxSizer(wx.HORIZONTAL)
 
-		self.WaitTime = wx.StaticText(self.m_panelMain, wx.ID_ANY, u"Maximale wachttijd:", wx.DefaultPosition, wx.DefaultSize, 0)
+		self.WaitTime = wx.StaticText(self.m_panelMain, wx.ID_ANY, u"Maximale wachttijd:            ", wx.DefaultPosition, wx.DefaultSize, 0)
 		self.WaitTime.Wrap(-1)
 
 		WaitTimeSizer.Add(self.WaitTime, 0, wx.ALIGN_CENTER|wx.ALL, 0)
 
-		self.WaitTimeCtrl = wx.TextCtrl(self.m_panelMain, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0)
+		self.WaitTimeCtrl = wx.TextCtrl(self.m_panelMain, wx.ID_ANY, f"{self.params['wait_time']}", wx.DefaultPosition, wx.DefaultSize, 0)
 		WaitTimeSizer.Add(self.WaitTimeCtrl, 0, wx.ALIGN_CENTER|wx.ALL, 5)
 
 
@@ -302,7 +305,7 @@ class ParamPanel(wx.Panel):
 
 		MaxTimeSizer.Add(self.MaxTime, 0, wx.ALIGN_CENTER|wx.ALL, 0)
 
-		self.MaxTimeCtrl = wx.TextCtrl(self.m_panelMain, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0)
+		self.MaxTimeCtrl = wx.TextCtrl(self.m_panelMain, wx.ID_ANY, f"{self.params['max_time']}", wx.DefaultPosition, wx.DefaultSize, 0)
 		MaxTimeSizer.Add(self.MaxTimeCtrl, 0, wx.ALIGN_CENTER|wx.ALL, 5)
 
 
@@ -315,8 +318,24 @@ class ParamPanel(wx.Panel):
 		bSizerMain.Add(self.m_panelMain, 1, wx.EXPAND |wx.ALL, 0)
 
 		self.m_button1 = wx.Button(self, wx.ID_ANY, u"Pas parameters aan", wx.DefaultPosition, wx.DefaultSize, 0)
-		
+		self.m_button1.Bind(wx.EVT_BUTTON, self.OnParamAction)
+
 		bSizerMain.Add(self.m_button1, 0, wx.ALL, 5)
 		bSizerFrameMain.Add(bSizerMain, 1, wx.ALL|wx.EXPAND, 0)
 		self.SetSizer(bSizerFrameMain)
 		self.Layout()
+
+	def OnParamAction(self, event):
+		"""Handles the back end functionality for adjustments of company data. """ 
+
+		self.params['capacities'] = self.CapCtrl.GetValue() 
+		self.params['load_factor'] = self.LfCtrl.GetValue()
+		self.params['wait_time'] = int(self.WaitTimeCtrl.GetValue())
+		self.params['max_time'] = int(self.MaxTimeCtrl.GetValue())
+		
+		with open('data/params.pkl', 'wb') as f:
+			pickle.dump(self.params, f)
+		
+		dial = wx.MessageDialog(None, 'De gegevens zijn gewijzigd', 'Succes',
+		wx.OK | wx.ICON_INFORMATION)
+		dial.ShowModal()
