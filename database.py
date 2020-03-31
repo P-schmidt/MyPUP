@@ -195,7 +195,7 @@ def create_distance_matrix(filename, companies):
         distance_matrix.append(source_distances)
     return distance_matrix
 
-def create_database(filename, company_list, capacities=[200, 200, 200, 200, 200], create=False):
+def create_database(filename, company_list, capacities, create=False):
 
     # call this function if you want to create a new pickle with distances
     if create == True:

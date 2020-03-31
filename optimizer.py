@@ -93,14 +93,12 @@ def vrp_script(data, company_list, printer=False):
     return 0, 0
 
 
-def main(companies_to_remove=[], visualise = False, init_compare = True, sample=False):
+def main(companies_to_remove=[], capacities=[200, 200, 200, 200, 200], loadfactor=1,  visualise=True, init_compare=False, testing=False):
     """main function sets route planning function in motion. Takes the following arguments:
         companies_to_remove(optional) : list of companies that should not be taken into account for route planning.
         visualise(optional) : Google Maps pages with routes are created if True.
         init_compare(optional) : comparison with initial routes is made if True.
         sample(optional) : a random sample of companies is removed from planning if True."""
-
-    capacities = [200, 200, 200, 200, 200]
 
     filename = 'data/Mypup_bus'
 
@@ -125,7 +123,7 @@ def main(companies_to_remove=[], visualise = False, init_compare = True, sample=
     
     
     #create random numbers, and remove the companies belonging to those spots.
-    if sample:
+    if testing:
         for _ in range(4):
             number = randint(0, len(company_list)) - 1
             if number != 0:
@@ -145,6 +143,8 @@ def main(companies_to_remove=[], visualise = False, init_compare = True, sample=
     [company_list.remove(company) for company in set(companies_to_remove)]
     
     print(f"Totaal aantal te bezoeken bedrijven: {len(company_list)} \n")
+
+    print('capacities = ', capacities)
     # Instantiate the data problem.
     data = db.create_database(filename, company_list, capacities)
 
@@ -164,15 +164,15 @@ def main(companies_to_remove=[], visualise = False, init_compare = True, sample=
     data['vehicle_capacities'] = capacities
     data['num_vehicles'] = len(capacities)
 
-    loadfactor = 1
-    vehicles_used = 6
+    desired_vehicles = len(capacities)
+    vehicles_used = data['num_vehicles']+1
 
     routes, total_optimized_time = vrp_script(data, company_list, printer=False)
     if routes:
         routes = [route for route in routes if route != ['Mypup', 'Mypup']]
         vehicles_used = len(routes)
     
-    while vehicles_used > 5 or routes is 0:
+    while vehicles_used > desired_vehicles or routes is 0:
         data['vehicle_capacities'].append(200)
         data['num_vehicles'] = len(data['vehicle_capacities'])
         routes, total_optimized_time = vrp_script(data, company_list, printer=False)
@@ -209,7 +209,8 @@ def main(companies_to_remove=[], visualise = False, init_compare = True, sample=
     if visualise == True:
         vs.open_maps(filename, routes)
 
-
+def get_params():
+    pass
 
 if __name__ == '__main__':
     main()

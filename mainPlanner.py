@@ -409,9 +409,9 @@ class MyForm(wx.Frame):
 
 	def onButton(self, event):  
 		if self.id == 1:
-			optimizer.main(self.removed, True) 
+			optimizer.main(self.removed) 
 		if self.id == 2:
-			bakfiets_vrp.main(self.removed, True)
+			bakfiets_vrp.main(self.removed)
 
 
 # init and show App

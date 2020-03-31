@@ -254,7 +254,6 @@ class ParamPanel(wx.Panel):
 
 		bSizerPanel.Add(self.Explainer, 0, wx.ALIGN_CENTER|wx.ALL, 0)
 
-
 		bSizerMainPanel.Add(bSizerPanel, 1, wx.EXPAND, 0)
 
 		CapSizer = wx.BoxSizer(wx.HORIZONTAL)
